@@ -50,9 +50,9 @@ interp e i = eval e (Just i, Nothing, Nothing)
 
 eval                  Zero env = 0x0000000000000000
 eval                   One env = 0x0000000000000001
-eval    (Var X) (Just i, _, _) = i
-eval    (Var Y) (_, Just i, _) = i
-eval    (Var Z) (_, _, Just i) = i
+eval    (Var X) (Just x, _, _) = x
+eval    (Var Y) (_, Just y, _) = y
+eval    (Var Z) (_, _, Just z) = z
 eval (    IfZero e0 e1 e2) env = if (eval e0 env) == 0 then (eval e1 env) else (eval e2 env) 
 eval (       Unary op1 e0) env = eval_unary op1 (eval e0 env)
 eval (   Binary op2 e0 e1) env = eval_binary op2 (eval e0 env) (eval e1 env)
