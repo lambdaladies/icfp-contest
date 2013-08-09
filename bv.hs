@@ -60,8 +60,7 @@ eval_unary Shr1 i = shift i (-1)
 eval_unary Shr4 i = shift i (-4)
 eval_unary Shr16 i = shift i (-16)
 
--- why aren't these in scope?
-eval_binary And x y = x & y
-eval_binary Or x y = x | y
+eval_binary And x y = x .&. y
+eval_binary Or x y = x .|. y
 eval_binary Xor x y = xor x y
 eval_binary Plus x y = x + y
