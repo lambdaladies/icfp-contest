@@ -1,6 +1,6 @@
 module Syntax where
 import Data.Set (Set, union, singleton, empty)
-import Data.Bits (Bits, (.|.), (.&.), xor, complement, shift)
+import Data.Bits (Bits, (.|.), (.&.), xor, complement, shiftL, shiftR)
 
 data UnOp = Not | Shl1 | Shr1 | Shr4 | Shr16 deriving (Show, Eq, Ord)
 data BinOp = And | Or | Xor | Plus deriving (Show, Eq, Ord)
@@ -55,10 +55,10 @@ eval (       Unary op1 e0) env = eval_unary op1 (eval e0 env)
 eval (   Binary op2 e0 e1) env = eval_binary op2 (eval e0 env) (eval e1 env)
 
 eval_unary   Not i = complement i
-eval_unary  Shl1 i = shift i 1
-eval_unary  Shr1 i = shift i (-1)
-eval_unary  Shr4 i = shift i (-4)
-eval_unary Shr16 i = shift i (-16)
+eval_unary  Shl1 i = shiftL i 1
+eval_unary  Shr1 i = shiftR i 1
+eval_unary  Shr4 i = shiftR i 4
+eval_unary Shr16 i = shiftR i 16
 
 eval_binary  And x y = x .&. y
 eval_binary   Or x y = x .|. y
