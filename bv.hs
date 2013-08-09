@@ -1,4 +1,4 @@
-module Syntax where
+module BV where
 import Data.Set (Set, union, singleton, empty)
 import Data.Bits (Bits, (.|.), (.&.), xor, complement, shiftL, shiftR)
 import Data.Word (Word64)
