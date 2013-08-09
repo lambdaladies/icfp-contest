@@ -102,3 +102,5 @@ eval_binary  And x y = x .&. y
 eval_binary   Or x y = x .|. y
 eval_binary  Xor x y = xor x y
 eval_binary Plus x y = x + y
+
+eval_program (LambdaX e0) i = eval e0 (Just i, Nothing, Nothing)
