@@ -5,8 +5,8 @@ import Data.Word (Word64)
 
 type Vector = Word64
 
-data UnOp = Not | Shl1 | Shr1 | Shr4 | Shr16 deriving (Show, Eq, Ord)
-data BinOp = And | Or | Xor | Plus deriving (Show, Eq, Ord)
+data UnOp = Not | Shl1 | Shr1 | Shr4 | Shr16 deriving (Eq, Ord)
+data BinOp = And | Or | Xor | Plus deriving (Eq, Ord)
 data Ops = UnaryOp UnOp | BinaryOp BinOp | IfZeroOp | TFoldOp | FoldOp deriving (Show, Eq, Ord)
 
 data Variable = X | Y | Z deriving (Show, Eq, Ord)
@@ -18,9 +18,36 @@ data Expr  = Zero
            | IfZero Expr Expr Expr
            | Unary UnOp Expr
            | Binary BinOp Expr Expr
-           deriving (Show, Eq, Ord)
+           deriving (Eq, Ord)
 
 data Program = LambdaX Expr
+
+instance Show UnOp where
+    show Not   = "not"
+    show Shl1  = "shl1"
+    show Shr1  = "shr1"
+    show Shr4  = "shr4"
+    show Shr16 = "shr16"
+
+instance Show BinOp where
+    show And   = "and"
+    show Or    = "or"
+    show Xor   = "xor"
+    show Plus  = "plus"
+
+instance Show Expr where
+    show (                 Zero) = "0"
+    show (                  One) = "1"
+    show (                Var X) = "x"
+    show (                Var Y) = "y"
+    show (                Var Z) = "z"
+    show (FoldLambdaYZ e0 e1 e2) = "(fold " ++ show e0 ++ " " ++ show e1 ++ " (lambda (y z) " ++ show e2 ++ "))"
+    show (      IfZero e0 e1 e2) = "(if0 " ++ show e0 ++ " " ++ show e1 ++ " " ++ show e2 ++ ")"
+    show (         Unary op1 e0) = "(" ++ show op1 ++ " " ++ show e0 ++ ")"
+    show (     Binary op2 e0 e1) = "(" ++ show op2 ++ " " ++ show e0 ++ " " ++ show e1 ++ ")"
+
+instance Show Program where
+    show (LambdaX e0) = "(lambda (x) " ++ show e0 ++ ")"
 
 size (                 Zero) = 1
 size (                  One) = 1
