@@ -20,6 +20,8 @@ data Expr  = Zero
            | Binary BinOp Expr Expr
            deriving (Show, Eq, Ord)
 
+data Program = LambdaX Expr
+
 size (                 Zero) = 1
 size (                  One) = 1
 size (                Var v) = 1
@@ -28,7 +30,7 @@ size (FoldLambdaYZ e0 e1 e2) = 2 + size e0 + size e1 + size e2
 size (         Unary op1 e0) = 1 + size e0
 size (     Binary op2 e0 e1) = 1 + size e0 + size e1
 
-program_size e0 = 1 + size e0
+program_size (LambdaX e0) = 1 + size e0
 
 opset (                 Zero) = empty
 opset (                  One) = empty
