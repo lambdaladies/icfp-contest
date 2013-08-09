@@ -45,22 +45,22 @@ eval :: Expr -> (Maybe Integer, Maybe Integer, Maybe Integer) -> Integer
 
 interp e i = eval e (Just i, Nothing, Nothing)
 
-eval Zero _ = 0x0000000000000000
-eval One _ = 0x0000000000000001
-eval (Var X) (Just i, _, _) = i
-eval (Var Y) (_, Just i, _) = i
-eval (Var Z) (_, _, Just i) = i
-eval (IfZero e1 e2 e3) env = if (eval e1 env) == 0 then eval e2 env else eval e3 env 
-eval (Unary o e) env = eval_unary o (eval e env)
-eval (Binary o e1 e2) env = eval_binary o (eval e1 env) (eval e2 env)
+eval                  Zero env = 0x0000000000000000
+eval                   One env = 0x0000000000000001
+eval    (Var X) (Just i, _, _) = i
+eval    (Var Y) (_, Just i, _) = i
+eval    (Var Z) (_, _, Just i) = i
+eval (    IfZero e0 e1 e2) env = if (eval e0 env) == 0 then (eval e1 env) else (eval e2 env) 
+eval (       Unary op1 e0) env = eval_unary op1 (eval e0 env)
+eval (   Binary op2 e0 e1) env = eval_binary op2 (eval e0 env) (eval e1 env)
 
-eval_unary Not i = complement i
-eval_unary Shl1 i = shift i 1
-eval_unary Shr1 i = shift i (-1)
-eval_unary Shr4 i = shift i (-4)
+eval_unary   Not i = complement i
+eval_unary  Shl1 i = shift i 1
+eval_unary  Shr1 i = shift i (-1)
+eval_unary  Shr4 i = shift i (-4)
 eval_unary Shr16 i = shift i (-16)
 
-eval_binary And x y = x .&. y
-eval_binary Or x y = x .|. y
-eval_binary Xor x y = xor x y
+eval_binary  And x y = x .&. y
+eval_binary   Or x y = x .|. y
+eval_binary  Xor x y = xor x y
 eval_binary Plus x y = x + y
