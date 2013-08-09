@@ -1,6 +1,6 @@
 module Syntax where
 import Data.Set (Set, union, singleton, empty)
-import Data.Bits
+import Data.Bits (Bits, (.|.), (.&.), xor, complement, shift)
 
 data UnOp = Not | Shl1 | Shr1 | Shr4 | Shr16 deriving (Show, Eq, Ord)
 data BinOp = And | Or | Xor | Plus deriving (Show, Eq, Ord)
@@ -61,7 +61,7 @@ eval_unary Shr4 i = shift i (-4)
 eval_unary Shr16 i = shift i (-16)
 
 -- why aren't these in scope?
--- eval_binary And x y = x & y
--- eval_binary Or x y = x|y
+eval_binary And x y = x & y
+eval_binary Or x y = x | y
 eval_binary Xor x y = xor x y
 eval_binary Plus x y = x + y
