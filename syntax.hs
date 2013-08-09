@@ -1,3 +1,4 @@
+module Syntax where
 import Data.Set (Set, union, singleton, empty)
 import Data.Bits
 
