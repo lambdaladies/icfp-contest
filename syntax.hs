@@ -1,3 +1,4 @@
+module Syntax where
 import Data.Set (Set, union, singleton, empty)
 
 data UnOp = Not | Shl1 | Shr1 | Shr4 | Shr16 deriving (Show, Eq, Ord)
