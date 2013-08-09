@@ -56,6 +56,12 @@ eval    (Var Z) (_, _, Just z) = z
 eval (    IfZero e0 e1 e2) env = if (eval e0 env) == 0 then (eval e1 env) else (eval e2 env) 
 eval (       Unary op1 e0) env = eval_unary op1 (eval e0 env)
 eval (   Binary op2 e0 e1) env = eval_binary op2 (eval e0 env) (eval e1 env)
+eval (FoldLambda e0 e1 e2) env@(Just x, Nothing, Nothing) = foldr f (eval e1 env) (bytes $ eval e0 env)
+    where f y z = eval e2 (Just x, Just y, Just z)
+
+-- convert a 64-bit word to a list of 8 bytes-as-words in bigendian order
+bytes i = [(shiftR i offset) .&. 0x00000000000000FF | offset <- [56,48..0]]
+
 
 eval_unary   Not i = complement i
 eval_unary  Shl1 i = shiftL i 1
