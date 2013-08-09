@@ -6,7 +6,7 @@ import Control.Applicative
 import Control.Monad
 import Network.HTTP.Conduit
 import GHC.Generics
-import Syntax
+import BV
 
 --run first:
 --	cabal install http-conduit 
