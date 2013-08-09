@@ -1,6 +1,9 @@
 module Syntax where
 import Data.Set (Set, union, singleton, empty)
 import Data.Bits (Bits, (.|.), (.&.), xor, complement, shiftL, shiftR)
+import Data.Word (Word64)
+
+type Vector = Word64
 
 data UnOp = Not | Shl1 | Shr1 | Shr4 | Shr16 deriving (Show, Eq, Ord)
 data BinOp = And | Or | Xor | Plus deriving (Show, Eq, Ord)
@@ -39,9 +42,9 @@ operators (FoldLambda (Var X) Zero e) = (singleton TFoldOp) `union` (opset e)
 operators e                           = opset e
 
 -- Whole programs
-interp :: Expr -> Integer -> Integer
+interp :: Expr -> Vector -> Vector
 -- Intermediate expressions, evaluated in a 3-var environment
-eval :: Expr -> (Maybe Integer, Maybe Integer, Maybe Integer) -> Integer
+eval :: Expr -> (Maybe Vector, Maybe Vector, Maybe Vector) -> Vector
 
 interp e i = eval e (Just i, Nothing, Nothing)
 
