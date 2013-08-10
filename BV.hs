@@ -1,6 +1,7 @@
 module BV where
 
 import Data.Function (fix)
+import Data.Maybe (catMaybes)
 import qualified Data.Map as Map
 import Data.Set (Set, union, singleton, empty, member, fromList)
 import Data.Bits (Bits, (.|.), (.&.), xor, complement, shiftL, shiftR)
@@ -42,6 +43,28 @@ instance Show BinOp where
 
 instance Show TernOp where
     show IfZero = "if0"
+
+parse_unary   "not"   = Just Not
+parse_unary   "shl1"  = Just Shl1
+parse_unary   "shr1"  = Just Shr1
+parse_unary   "shr4"  = Just Shr4
+parse_unary   "shr16" = Just Shr16
+parse_unary   _       = Nothing
+
+parse_binary  "and"   = Just And
+parse_binary  "or"    = Just Or
+parse_binary  "xor"   = Just Xor
+parse_binary  "plus"  = Just Plus
+parse_binary  _       = Nothing
+
+parse_ternary "if0"   = Just IfZero
+parse_ternary _       = Nothing
+
+parse_opstrings opstrings = Operators {
+    unary   = catMaybes $ map parse_unary opstrings,
+    binary  = catMaybes $ map parse_binary opstrings,
+    ternary = catMaybes $ map parse_ternary opstrings
+}
 
 instance Show Expr where
     show (                 Zero) = "0"

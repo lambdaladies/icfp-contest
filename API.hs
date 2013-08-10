@@ -31,58 +31,62 @@ call url =
  -- Get JSON data and decode it
  (>>= maybe (ioError $ userError "deserialization error") return) (decode <$> (getJSON url))
 
-   --interface TrainingProblem {
-   --  challenge: string;
-   --  id: string;
-   --  size: number;
-   --  operators: string[];
-   --}
+-- interface TrainingProblem {
+--    challenge: string;
+--    id: string;
+--    size: number;
+--    operators: string[];
+-- }
 
-data TrainingProblem =
-   TrainingProblem { id        :: String,
-                     size      :: Int,
-                     operators :: Array, --TODO: parse into operators
-                     challenge :: String
-                   } deriving (Show, Generic)
+-- interface Problem {
+--    id: string;
+--    size: number;
+--    operators: string[];
+--    solved?: boolean;
+--    timeLeft?: number
+-- }
 
-instance FromJSON TrainingProblem
-instance ToJSON TrainingProblem
+-- this represents both TrainingProblem and Problem
+data Problem = Problem {
+    problemId :: String,
+    problemSize :: Int,
+    problemOperatorStrings :: [String],
+    problemChallenge :: Maybe String, -- training problems only
+    problemSolvedMaybe :: Maybe Bool,
+    problemTimeLeft :: Maybe Int
+} deriving (Show)
 
-   --interface TrainingRequest {
-   --    size?: number;
-   --    operators?: string[];
-   --   }
+problemOperators p = parse_opstrings $ problemOperatorStrings p
 
-data TrainingRequest =
-   TrainingRequest {
-                     reqSize :: Maybe Int,
-                     reqOperators  :: Maybe Array --TODO: take operators
-                   } deriving (Show)
+problemSolved p = bool_or_false $ problemSolvedMaybe p
+bool_or_false (Just b) = b
+bool_or_false Nothing  = False
+
+instance FromJSON Problem where
+    parseJSON (Object o) = Problem <$>
+                           o .: "id" <*>
+                           o .: "size" <*>
+                           o .: "operators" <*>
+                           o .: "challenge" <*>
+                           o .: "solved" <*>
+                           o .: "timeLeft"
+    parseJSON _          = mzero
+
+-- interface TrainingRequest {
+--    size?: number;
+--    operators?: string[];
+-- }
+
+data TrainingRequest = TrainingRequest {
+    reqSize      :: Maybe Int,
+    reqOperators :: Maybe Array --TODO: take operators
+} deriving (Show)
 
 instance ToJSON TrainingRequest where
-  toJSON TrainingRequest{..} = object $ catMaybes
+    toJSON TrainingRequest{..} = object $ catMaybes
                                            [ ("size" .=) <$> reqSize
                                            , ("operators" .=) <$> reqOperators ]
 
 --TODO: add body to request
-train = call trainURL :: IO TrainingProblem
+train = call trainURL :: IO Problem
 
-
- --interface Problem {
- --   id: string;
- --   size: number;
- --   operators: string[];
- --   solved?: boolean;
- --   timeLeft?: number
- -- }
-
-data Problem =
-   Problem { problemId :: String,
-             problemSize :: Int,
-             problemOperators :: Operators,
-             problemChallenge :: String, -- training problems only
-             problemSolved :: Bool,
-             problemTimeLeft :: Int
-   } deriving (Show)
-
---instance FromJSON Problem
