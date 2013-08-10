@@ -20,6 +20,7 @@ callServer path = "http://icfpc2013.cloudapp.net/" ++ (dropWhile ('/'==) path) +
 
 statsURL = callServer "status"
 trainURL = callServer "train"
+problemsURL = callServer "myproblems"
 
 decode_string s = decode $ BS.pack s
 
@@ -70,7 +71,7 @@ instance ToJSON TrainingRequest where
 
 --TODO: add body to request
 train = call trainURL :: IO Problem
-
+myProblems = call problemsURL :: IO [Problem]
 
 
 --testing methods
