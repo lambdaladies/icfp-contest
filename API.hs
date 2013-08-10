@@ -24,6 +24,8 @@ problemsURL = callServer "myproblems"
 
 decode_string s = decode $ BS.pack s
 
+--todo: add bodies
+--postRequestWithBody url "json" "test"
 getJSON :: String -> IO BS.ByteString
 getJSON url = do
    json <- simpleHTTP (getRequest url) >>= getResponseBody
