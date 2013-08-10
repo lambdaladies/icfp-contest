@@ -31,21 +31,6 @@ call url =
  -- Get JSON data and decode it
  (>>= maybe (ioError $ userError "deserialization error") return) (decode <$> (getJSON url))
 
--- interface TrainingProblem {
---    challenge: string;
---    id: string;
---    size: number;
---    operators: string[];
--- }
-
--- interface Problem {
---    id: string;
---    size: number;
---    operators: string[];
---    solved?: boolean;
---    timeLeft?: number
--- }
-
 -- this represents both TrainingProblem and Problem
 data Problem = Problem {
     problemId :: String,
@@ -67,9 +52,9 @@ instance FromJSON Problem where
                            o .: "id" <*>
                            o .: "size" <*>
                            o .: "operators" <*>
-                           o .: "challenge" <*>
-                           o .: "solved" <*>
-                           o .: "timeLeft"
+                           o .:? "challenge" <*>
+                           o .:? "solved" <*>
+                           o .:? "timeLeft"
     parseJSON _          = mzero
 
 -- interface TrainingRequest {
@@ -89,4 +74,13 @@ instance ToJSON TrainingRequest where
 
 --TODO: add body to request
 train = call trainURL :: IO Problem
+
+
+
+--testing methods
+testStatic :: String -> IO BS.ByteString
+testStatic s = do
+  return (BS.pack s)
+
+--testProblem = "{\"id\":\"ZH35UqFFcfzebGjoMB8rgYpA\",\"size\":17,\"operators\":[\"and\",\"if0\",\"or\",\"shr1\",\"shr16\",\"shr4\",\"xor\"]}"
 
