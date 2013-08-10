@@ -1,6 +1,7 @@
 module BV where
 
 import Data.Function (fix)
+import Data.Maybe (catMaybes, fromJust)
 import qualified Data.Map as Map
 import Data.Set (Set, union, singleton, empty, member, fromList)
 import Data.Bits (Bits, (.|.), (.&.), xor, complement, shiftL, shiftR)
@@ -8,12 +9,13 @@ import Data.Word (Word64)
 
 type Vector = Word64
 
-data UnOp = Not | Shl1 | Shr1 | Shr4 | Shr16 deriving (Eq, Ord)
-data BinOp = And | Or | Xor | Plus deriving (Eq, Ord)
-data TernOp = IfZero deriving (Eq, Ord)
+data UnOp = Not | Shl1 | Shr1 | Shr4 | Shr16 deriving (Eq, Ord, Show)
+data BinOp = And | Or | Xor | Plus deriving (Eq, Ord, Show)
+data TernOp = IfZero deriving (Eq, Ord, Show)
+data FoldOp = Fold | TFold deriving (Eq, Ord, Show)
 
 data Ops = UnaryOp UnOp | BinaryOp BinOp | TernaryOp TernOp | TFoldOp | FoldOp
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Show)
 
 data Variable = X | Y | Z deriving (Show, Eq, Ord)
 
@@ -28,66 +30,44 @@ data Expr  = Zero
            | Ternary TernOp Expr Expr Expr
            deriving (Eq, Ord)
 
--- data Ops = UnaryOp UnOp
---          | BinaryOp BinOp
---          | TernaryOp TernOp
---          | TFoldOp
---          | FoldOp deriving (Show, Eq, Ord, Generic)
+data Operators = Operators {
+    unary   :: [UnOp],
+    binary  :: [BinOp],
+    ternary :: [TernOp],
+    folds   :: [FoldOp]
+} deriving (Show, Eq, Ord)
 
-instance Show Ops where
-  show (UnaryOp op)   = show op
-  show (BinaryOp op)  = show op
-  show (TernaryOp op) = show op
-  show _              = "Fold"
+parse_unary :: String -> Maybe UnOp
+parse_unary   "not"   = Just Not
+parse_unary   "shl1"  = Just Shl1
+parse_unary   "shr1"  = Just Shr1
+parse_unary   "shr4"  = Just Shr4
+parse_unary   "shr16" = Just Shr16
+parse_unary   _       = Nothing
 
-instance Read Ops where
-    readsPrec _ "not"   = [(UnaryOp Not,"")]
-    readsPrec _ "shl1"  = [(UnaryOp Shl1,"")]
-    readsPrec _ "shr1"  = [(UnaryOp Shr1,"")]
-    readsPrec _ "shr4"  = [(UnaryOp Shr4,"")]
-    readsPrec _ "shr16" = [(UnaryOp Shr16,"")]
-    readsPrec _ "and"   = [(BinaryOp And,"")]
-    readsPrec _ "or"    = [(BinaryOp Or,"")]
-    readsPrec _ "xor"   = [(BinaryOp Xor,"")]
-    readsPrec _ "plus"  = [(BinaryOp Plus,"")]
-    readsPrec _ "if0"   = [(TernaryOp IfZero,"")]
-    readsPrec _ _       = []
+parse_binary :: String -> Maybe BinOp
+parse_binary  "and"   = Just And
+parse_binary  "or"    = Just Or
+parse_binary  "xor"   = Just Xor
+parse_binary  "plus"  = Just Plus
+parse_binary  _       = Nothing
 
+parse_ternary :: String -> Maybe TernOp
+parse_ternary "if0"   = Just IfZero
+parse_ternary _       = Nothing
 
-instance Show UnOp where
-    show Not   = "not"
-    show Shl1  = "shl1"
-    show Shr1  = "shr1"
-    show Shr4  = "shr4"
-    show Shr16 = "shr16"
+parse_folds :: String -> Maybe FoldOp
+parse_folds   "fold"  = Just Fold
+parse_folds   "tfold" = Just TFold
+parse_folds   _       = Nothing
 
-instance Read UnOp where
-    readsPrec _ "not"   = [(Not,"")]
-    readsPrec _ "shl1"  = [(Shl1,"")]
-    readsPrec _ "shr1"  = [(Shr1,"")]
-    readsPrec _ "shr4"  = [(Shr4,"")]
-    readsPrec _ "shr16" = [(Shr16,"")]
-    readsPrec _ _       = []
-
-instance Show BinOp where
-    show And   = "and"
-    show Or    = "or"
-    show Xor   = "xor"
-    show Plus  = "plus"
-
-instance Read BinOp where
-    readsPrec _ "and"  = [(And,"")]
-    readsPrec _ "or"   = [(Or,"")]
-    readsPrec _ "xor"  = [(Xor,"")]
-    readsPrec _ "plus" = [(Plus,"")]
-    readsPrec _ _      = []
-
-instance Show TernOp where
-    show IfZero = "if0"
-
-instance Read TernOp where
-    readsPrec _ "if0" = [(IfZero,"")]
-    readsPrec _ _     = []
+parse_opstrings :: [String] -> Operators
+parse_opstrings opstrings = Operators {
+    unary   = catMaybes $ map parse_unary opstrings,
+    binary  = catMaybes $ map parse_binary opstrings,
+    ternary = catMaybes $ map parse_ternary opstrings,
+    folds   = catMaybes $ map parse_folds opstrings
+}
 
 instance Show Expr where
     show (                 Zero) = "0"
@@ -118,12 +98,6 @@ opset ( Ternary op3 e0 e1 e2) = (singleton $ TernaryOp op3) `union` (opset  e0) 
 
 operators (FoldLambdaYZ (Var X) Zero e) = (singleton TFoldOp) `union` (opset e)
 operators e                             = opset e
-
-data Operators = Operators {
-    unary   :: [UnOp],
-    binary  :: [BinOp],
-    ternary :: [TernOp]
-} deriving (Show, Eq, Ord)
 
 -- Whole programs
 interp :: Expr -> Vector -> Vector
@@ -163,7 +137,8 @@ eval_ternary IfZero e x y = if e == 0 then x else y
 unary_ops = [Not, Shl1, Shr1, Shr4, Shr16]
 binary_ops = [And, Or, Xor, Plus]
 ternary_ops = [IfZero]
-all_ops = Operators { unary=unary_ops, binary=binary_ops, ternary=ternary_ops }
+fold_ops = [Fold, TFold]
+supported_ops = Operators { unary=unary_ops, binary=binary_ops, ternary=ternary_ops, folds=[] }
 
 triples :: ExprSize -> [(ExprSize, ExprSize, ExprSize)]
 triples x = [(i, j, k) | i <- [1..(x-2)], (j, k) <- pairs (x-i)]
@@ -181,7 +156,6 @@ nontrivial e = not $ member e trivial
 
 
 generate_open recgen ops n
-    | n <= 0    = []
     | n == 1    = [Zero, One, Var X]
     | n == 2    = filter nontrivial [Unary op1 e0 | op1 <- unary ops,
                                                     e0 <- recgen ops (n-1)]
@@ -197,20 +171,45 @@ generate_open recgen ops n
                                           e1 <- recgen ops j,
                                           e2 <- recgen ops k]
 
+integerLength xs = toInteger $ length xs
+
+l_generate_open l_recgen ops n
+    | n <= 2    = integerLength $ generate ops n
+    | otherwise = integerLength (unary ops)   * l_recgen ops (n-1) +
+                  integerLength (binary ops)  * sum [l_recgen ops i * l_recgen ops j
+                                                    | (i, j) <- pairs_in_order (n-1)] +
+                  integerLength (ternary ops) * sum [l_recgen ops i * l_recgen ops j * l_recgen ops k
+                                                    | (i, j, k) <- triples (n-1)]
 
 show_program e0 = "(lambda (x) " ++ show e0 ++ ")"
 size_program e0 = 1 + size e0
 eval_program e0 i = eval e0 (Just i, Nothing, Nothing)
 
-just_lookup k m = result
-    where Just result = Map.lookup k m
-
 generate :: Operators -> Int -> [Expr]
-generate ops n = just_lookup (ops, n) $ loop Map.empty ops 0 n
+generate ops n = memoize2 generate_open ops n
 --generate = fix generate_open
 
-loop memo ops i n
-    | i < n     = loop memo' ops (i+1) n
+generate_all :: Operators -> Int -> [Expr]
+generate_all ops n = memoize2_and_reduce concat generate_open ops n
+
+l_generate :: Operators -> Int -> Integer
+l_generate ops n = memoize2 l_generate_open ops n
+
+l_generate_all :: Operators -> Int -> Integer
+l_generate_all ops n = memoize2_and_reduce sum l_generate_open ops n
+
+memoize2 f ops n = just_lookup (ops, n) final_memo
+    where final_memo = loop f Map.empty ops 1 n
+
+memoize2_and_reduce r f ops n = r [just_lookup (ops, i) final_memo | i <- [1..n]]
+    where final_memo = loop f Map.empty ops 1 n
+
+-- We know that memo lookups will succeed, because programs of given sizes are calculated
+-- in order from size 1..n.
+just_lookup k m = fromJust $ Map.lookup k m
+
+loop f memo ops i n
+    | i < n     = loop f memo' ops (i+1) n
     | otherwise = memo'
-    where memo' = Map.insert (ops, i) (generate_open recgen ops i) memo
-          recgen ops' i' = just_lookup (ops', i') memo
+    where memo' = Map.insert (ops, i) (f recf ops i) memo
+          recf ops' i' = just_lookup (ops', i') memo
