@@ -30,10 +30,11 @@ main = do
     problems <- return $ fromJust (decode_string problems_json :: Maybe [Problem])
     print $ length problems
 
-    to_solve <- sort_problems problems
+    to_solve <- return $ sort_problems problems
     print $ length to_solve
 
-    solve_a_problem (head to_solve) newPureMT
+    random <- newPureMT
+    solve_a_problem (head to_solve) random
 
 solve_a_problem p random = do
     print p
@@ -44,7 +45,7 @@ solve_a_problem p random = do
 
 try_next_candidate candidates p random0 = do
     -- submit a query
-    (input,  random1) <- randomVector random0
+    (input, random1) <- return $ randomVector random0
     output <- submit_query input p
 
     -- filter candidates
@@ -63,11 +64,11 @@ try_next_candidate candidates p random0 = do
         else
             try_next_candidate (tail remaining) p random1
 
-submit_query :: Vector -> Problem -> IO ()
+submit_query :: Vector -> Problem -> IO Vector
 submit_query input p = do
-    print "Query: " ++ show input ++ " " + show p
+    print $ "Query: " ++ show input ++ " " ++ show p
     return 0x0000000000000000
 
-submit_guess :: Vector -> Problem -> IO ()
+submit_guess :: Expr -> Problem -> IO Outcome
 submit_guess guess p = do
     return Outcome { success = False }
