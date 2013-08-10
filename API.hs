@@ -1,4 +1,7 @@
 {-# LANGUAGE OverloadedStrings, RecordWildCards, DeriveGeneric  #-}
+
+module API where
+
 import qualified Data.ByteString.Lazy.Char8 as BS
 import Data.Text hiding (dropWhile)
 import Data.Aeson
@@ -9,10 +12,6 @@ import BV
 import Data.Maybe
 import Control.Monad.IO.Class (liftIO)
 import Network.HTTP
-
---run first:
---	cabal install http-conduit 
--- 	cabal install aeson
 
 --hey remove this before making code public!!!!
 key = "0373FX9sGnppdRBUxTroWBx8Rb4EJ53kFAYeMNgpvpsH1H"
@@ -77,5 +76,13 @@ train = call trainURL :: IO TrainingProblem
  --   timeLeft?: number
  -- }
 
+data Problem =
+   Problem { problemId :: String,
+             problemSize :: Int,
+             problemOperators :: Operators,
+             problemChallenge :: String, -- training problems only
+             problemSolved :: Bool,
+             problemTimeLeft :: Int
+   } deriving (Show)
 
-
+--instance FromJSON Problem
