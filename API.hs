@@ -21,6 +21,8 @@ callServer path = "http://icfpc2013.cloudapp.net/" ++ (dropWhile ('/'==) path) +
 statsURL = callServer "status"
 trainURL = callServer "train"
 
+decode_string s = decode $ BS.pack s
+
 getJSON :: String -> IO BS.ByteString
 getJSON url = do
    json <- simpleHTTP (getRequest url) >>= getResponseBody
