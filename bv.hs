@@ -1,4 +1,7 @@
 module BV where
+
+import Data.Function (fix)
+import qualified Data.Map as Map
 import Data.Set (Set, union, singleton, empty, member, fromList)
 import Data.Bits (Bits, (.|.), (.&.), xor, complement, shiftL, shiftR)
 import Data.Word (Word64)
@@ -125,23 +128,38 @@ pairs_in_order x = [(i, x-i) | i <- [1..((x-1) `div` 2)]]
 trivial = fromList [Unary Shr1 One, Unary Shr4 One, Unary Shr16 One]
 nontrivial e = not $ member e trivial
 
-generate ops n | n <= 0    = []
-               | n == 1    = [Zero, One, Var X]
-               | n == 2    = filter nontrivial [Unary op1 e0 | op1 <- unary ops,
-                                                               e0 <- generate ops 1]
-               | otherwise = [Unary op1 e0         | op1 <- unary ops,
-                                                     e0 <- generate ops (n-1)] ++
-                             [Binary op2 e0 e1     | op2 <- binary ops,
-                                                     (i, j) <- pairs_in_order (n-1),
-                                                     e0 <- generate ops i,
-                                                     e1 <- generate ops j] ++
-                             [Ternary op3 e0 e1 e2 | op3 <- ternary ops,
-                                                     (i, j, k) <- triples (n-1),
-                                                     e0 <- generate ops i,
-                                                     e1 <- generate ops j,
-                                                     e2 <- generate ops k]
+
+generate_open recgen ops n
+    | n <= 0    = []
+    | n == 1    = [Zero, One, Var X]
+    | n == 2    = filter nontrivial [Unary op1 e0 | op1 <- unary ops,
+                                                    e0 <- recgen ops (n-1)]
+    | otherwise = [Unary op1 e0         | op1 <- unary ops,
+                                          e0 <- recgen ops (n-1)] ++
+                  [Binary op2 e0 e1     | op2 <- binary ops,
+                                          (i, j) <- pairs_in_order (n-1),
+                                          e0 <- recgen ops i,
+                                          e1 <- recgen ops j] ++
+                  [Ternary op3 e0 e1 e2 | op3 <- ternary ops,
+                                          (i, j, k) <- triples (n-1),
+                                          e0 <- recgen ops i,
+                                          e1 <- recgen ops j,
+                                          e2 <- recgen ops k]
+
 
 show_program e0 = "(lambda (x) " ++ show e0 ++ ")"
 size_program e0 = 1 + size e0
 eval_program e0 i = eval e0 (Just i, Nothing, Nothing)
-generate_program ops n = generate ops (n-1)
+
+just_lookup k m = result
+    where Just result = Map.lookup k m
+
+generate :: Operators -> Int -> [Expr]
+generate ops n = just_lookup (ops, n) $ loop Map.empty ops 0 n
+--generate = fix generate_open
+
+loop memo ops i n
+    | i < n     = loop memo' ops (i+1) n
+    | otherwise = memo'
+    where memo' = Map.insert (ops, i) (generate_open recgen ops i) memo
+          recgen ops' i' = just_lookup (ops', i') memo
