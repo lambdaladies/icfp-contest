@@ -1,7 +1,7 @@
 module BV where
 
 import Data.Function (fix)
-import Data.Maybe (catMaybes)
+import Data.Maybe (catMaybes, fromJust)
 import qualified Data.Map as Map
 import Data.Set (Set, union, singleton, empty, member, fromList)
 import Data.Bits (Bits, (.|.), (.&.), xor, complement, shiftL, shiftR)
@@ -171,7 +171,6 @@ nontrivial e = not $ member e trivial
 
 
 generate_open recgen ops n
-    | n <= 0    = []
     | n == 1    = [Zero, One, Var X]
     | n == 2    = filter nontrivial [Unary op1 e0 | op1 <- unary ops,
                                                     e0 <- recgen ops (n-1)]
@@ -197,7 +196,6 @@ l_generate_open l_recgen ops n
                   integerLength (ternary ops) * sum [l_recgen ops i * l_recgen ops j * l_recgen ops k
                                                     | (i, j, k) <- triples (n-1)]
 
-
 show_program e0 = "(lambda (x) " ++ show e0 ++ ")"
 size_program e0 = 1 + size e0
 eval_program e0 i = eval e0 (Just i, Nothing, Nothing)
@@ -206,14 +204,24 @@ generate :: Operators -> Int -> [Expr]
 generate ops n = memoize2 generate_open ops n
 --generate = fix generate_open
 
+generate_all :: Operators -> Int -> [Expr]
+generate_all ops n = memoize2_and_reduce concat generate_open ops n
+
 l_generate :: Operators -> Int -> Integer
 l_generate ops n = memoize2 l_generate_open ops n
---l_generate = fix l_generate_open
 
-memoize2 f ops n = just_lookup (ops, n) $ loop f Map.empty ops 0 n
+l_generate_all :: Operators -> Int -> Integer
+l_generate_all ops n = memoize2_and_reduce sum l_generate_open ops n
 
-just_lookup k m = result
-    where Just result = Map.lookup k m
+memoize2 f ops n = just_lookup (ops, n) final_memo
+    where final_memo = loop f Map.empty ops 1 n
+
+memoize2_and_reduce r f ops n = r [just_lookup (ops, i) final_memo | i <- [1..n]]
+    where final_memo = loop f Map.empty ops 1 n
+
+-- We know that memo lookups will succeed, because programs of given sizes are calculated
+-- in order from size 1..n.
+just_lookup k m = fromJust $ Map.lookup k m
 
 loop f memo ops i n
     | i < n     = loop f memo' ops (i+1) n
