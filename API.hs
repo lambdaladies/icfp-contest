@@ -37,25 +37,19 @@ call url =
 data Problem = Problem {
     problemId :: String,
     problemSize :: Int,
-    problemOperatorStrings :: [String],
+    problemOperators :: BV.Operators,
     problemChallenge :: Maybe String, -- training problems only
-    problemSolvedMaybe :: Maybe Bool,
+    problemSolved :: Bool,
     problemTimeLeft :: Maybe Int
 } deriving (Show)
-
-problemOperators p = parse_opstrings $ problemOperatorStrings p
-
-problemSolved p = bool_or_false $ problemSolvedMaybe p
-bool_or_false (Just b) = b
-bool_or_false Nothing  = False
 
 instance FromJSON Problem where
     parseJSON (Object o) = Problem <$>
                            o .: "id" <*>
                            o .: "size" <*>
-                           o .: "operators" <*>
+                           liftM parse_opstrings (o .: "operators") <*>
                            o .:? "challenge" <*>
-                           o .:? "solved" <*>
+                           liftM (fromMaybe False) (o .:? "solved") <*>
                            o .:? "timeLeft"
     parseJSON _          = mzero
 
