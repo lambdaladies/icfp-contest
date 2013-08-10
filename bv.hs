@@ -151,13 +151,15 @@ generate_open recgen ops n
                                           e1 <- recgen ops j,
                                           e2 <- recgen ops k]
 
+integerLength xs = toInteger $ length xs
+
 l_generate_open l_recgen ops n
-    | n <= 2    = length $ generate ops n
-    | otherwise = length (unary ops)   * l_recgen ops (n-1) +
-                  length (binary ops)  * sum [l_recgen ops i * l_recgen ops j
-                                             | (i, j) <- pairs_in_order (n-1)] +
-                  length (ternary ops) * sum [l_recgen ops i * l_recgen ops j * l_recgen ops k
-                                             | (i, j, k) <- triples (n-1)]
+    | n <= 2    = integerLength $ generate ops n
+    | otherwise = integerLength (unary ops)   * l_recgen ops (n-1) +
+                  integerLength (binary ops)  * sum [l_recgen ops i * l_recgen ops j
+                                                    | (i, j) <- pairs_in_order (n-1)] +
+                  integerLength (ternary ops) * sum [l_recgen ops i * l_recgen ops j * l_recgen ops k
+                                                    | (i, j, k) <- triples (n-1)]
 
 
 show_program e0 = "(lambda (x) " ++ show e0 ++ ")"
@@ -168,8 +170,7 @@ generate :: Operators -> Int -> [Expr]
 generate ops n = memoize2 generate_open ops n
 --generate = fix generate_open
 
--- Beware: silent overflow when the result is too large for an Int.
-l_generate :: Operators -> Int -> Int
+l_generate :: Operators -> Int -> Integer
 l_generate ops n = memoize2 l_generate_open ops n
 --l_generate = fix l_generate_open
 
