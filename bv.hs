@@ -16,6 +16,8 @@ data Ops = UnaryOp UnOp | BinaryOp BinOp | TernaryOp TernOp | TFoldOp | FoldOp d
 
 data Variable = X | Y | Z deriving (Show, Eq, Ord)
 
+type ExprSize = Int
+
 data Expr  = Zero
            | One
            | Var Variable
@@ -117,12 +119,15 @@ binary_ops = [And, Or, Xor, Plus]
 ternary_ops = [IfZero]
 all_ops = Operators { unary=unary_ops, binary=binary_ops, ternary=ternary_ops }
 
-pairs x = [(i, x-i) | i <- [1..(x-1)]]
+triples :: ExprSize -> [(ExprSize, ExprSize, ExprSize)]
 triples x = [(i, j, k) | i <- [1..(x-2)], (j, k) <- pairs (x-i)]
+ where
+  pairs y = [(i, y-i) | i <- [1..(y-1)]]
 
 -- since all binary operators of BV are symmetric, we only need to consider applications
 -- of binary operators where the second argument is no smaller than the first.
-pairs_in_order x = [(i, x-i) | i <- [1..((x-1) `div` 2)]]
+pairs_in_order :: ExprSize -> [(ExprSize, ExprSize)]
+pairs_in_order x = [(i, x-i) | i <- [1..(x `div` 2)]]
 
 -- eliminate some expressions that are always redundant
 trivial = fromList [Unary Shr1 One, Unary Shr4 One, Unary Shr16 One]
