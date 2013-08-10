@@ -8,9 +8,11 @@ import API
 cost_threshold (Just timeLeft) = (toInteger timeLeft * 100) `min` 1000000
 cost_threshold Nothing         = 1000000
 
-should_we_solve problem =
+want_to_solve problem =
     not (problemSolved problem) &&
-    l_generate (problemOperators problem) (problemSize problem) < cost_threshold (problemTimeLeft problem)
+    folds ops == [] &&
+    l_generate ops (problemSize problem) < cost_threshold (problemTimeLeft problem)
+    where ops = problemOperators problem
 
 main = do
     json <- readFile "myproblems.txt"

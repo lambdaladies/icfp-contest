@@ -12,6 +12,7 @@ type Vector = Word64
 data UnOp = Not | Shl1 | Shr1 | Shr4 | Shr16 deriving (Eq, Ord)
 data BinOp = And | Or | Xor | Plus deriving (Eq, Ord)
 data TernOp = IfZero deriving (Eq, Ord)
+data FoldOp = Fold | TFold deriving (Eq, Ord)
 
 data Ops = UnaryOp UnOp | BinaryOp BinOp | TernaryOp TernOp | TFoldOp | FoldOp deriving (Show, Eq, Ord)
 
@@ -27,6 +28,14 @@ data Expr  = Zero
            | Binary BinOp Expr Expr
            | Ternary TernOp Expr Expr Expr
            deriving (Eq, Ord)
+
+data Operators = Operators {
+    unary   :: [UnOp],
+    binary  :: [BinOp],
+    ternary :: [TernOp],
+    folds   :: [FoldOp]
+} deriving (Show, Eq, Ord)
+
 
 instance Show UnOp where
     show Not   = "not"
@@ -44,6 +53,10 @@ instance Show BinOp where
 instance Show TernOp where
     show IfZero = "if0"
 
+instance Show FoldOp where
+    show Fold   = "fold"
+    show TFold  = "tfold"
+
 parse_unary   "not"   = Just Not
 parse_unary   "shl1"  = Just Shl1
 parse_unary   "shr1"  = Just Shr1
@@ -60,10 +73,15 @@ parse_binary  _       = Nothing
 parse_ternary "if0"   = Just IfZero
 parse_ternary _       = Nothing
 
+parse_folds   "fold"  = Just Fold
+parse_folds   "tfold" = Just TFold
+parse_folds   _       = Nothing
+
 parse_opstrings opstrings = Operators {
     unary   = catMaybes $ map parse_unary opstrings,
     binary  = catMaybes $ map parse_binary opstrings,
-    ternary = catMaybes $ map parse_ternary opstrings
+    ternary = catMaybes $ map parse_ternary opstrings,
+    folds   = catMaybes $ map parse_folds opstrings
 }
 
 instance Show Expr where
@@ -95,12 +113,6 @@ opset ( Ternary op3 e0 e1 e2) = (singleton $ TernaryOp op3) `union` (opset  e0) 
 
 operators (FoldLambdaYZ (Var X) Zero e) = (singleton TFoldOp) `union` (opset e)
 operators e                             = opset e
-
-data Operators = Operators {
-    unary   :: [UnOp],
-    binary  :: [BinOp],
-    ternary :: [TernOp]
-} deriving (Show, Eq, Ord)
 
 -- Whole programs
 interp :: Expr -> Vector -> Vector
@@ -140,7 +152,8 @@ eval_ternary IfZero e x y = if e == 0 then x else y
 unary_ops = [Not, Shl1, Shr1, Shr4, Shr16]
 binary_ops = [And, Or, Xor, Plus]
 ternary_ops = [IfZero]
-all_ops = Operators { unary=unary_ops, binary=binary_ops, ternary=ternary_ops }
+fold_ops = [Fold, TFold]
+supported_ops = Operators { unary=unary_ops, binary=binary_ops, ternary=ternary_ops, folds=[] }
 
 triples :: ExprSize -> [(ExprSize, ExprSize, ExprSize)]
 triples x = [(i, j, k) | i <- [1..(x-2)], (j, k) <- pairs (x-i)]
