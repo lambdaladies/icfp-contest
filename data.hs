@@ -28,7 +28,7 @@ getJSON url = do
    return (BS.pack json)
 
 call :: FromJSON b => String -> IO b
-call url = 
+call url =
  -- Get JSON data and decode it
  (>>= maybe (ioError $ userError "deserialization error") return) (decode <$> (getJSON url))
 
@@ -39,11 +39,11 @@ call url =
    --  operators: string[];
    --}
 
-data TrainingProblem = 
-   TrainingProblem { id    		:: String,
-   					 size        :: Int,
-   					 operators	:: Array, --TODO: parse into operators
-   					 challenge   :: String
+data TrainingProblem =
+   TrainingProblem { id        :: String,
+                     size      :: Int,
+                     operators :: Array, --TODO: parse into operators
+                     challenge :: String
                    } deriving (Show, Generic)
 
 instance FromJSON TrainingProblem
@@ -54,11 +54,11 @@ instance ToJSON TrainingProblem
    --    operators?: string[];
    --   }
 
-data TrainingRequest = 
-   TrainingRequest { 
+data TrainingRequest =
+   TrainingRequest {
                      reqSize :: Maybe Int,
                      reqOperators  :: Maybe Array --TODO: take operators
-                   } deriving (Show)  
+                   } deriving (Show)
 
 instance ToJSON TrainingRequest where
   toJSON TrainingRequest{..} = object $ catMaybes
@@ -68,7 +68,7 @@ instance ToJSON TrainingRequest where
 --TODO: add body to request
 train = call trainURL :: IO TrainingProblem
 
- 
+
  --interface Problem {
  --   id: string;
  --   size: number;
