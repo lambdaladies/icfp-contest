@@ -12,7 +12,8 @@ data UnOp = Not | Shl1 | Shr1 | Shr4 | Shr16 deriving (Eq, Ord)
 data BinOp = And | Or | Xor | Plus deriving (Eq, Ord)
 data TernOp = IfZero deriving (Eq, Ord)
 
-data Ops = UnaryOp UnOp | BinaryOp BinOp | TernaryOp TernOp | TFoldOp | FoldOp deriving (Show, Eq, Ord)
+data Ops = UnaryOp UnOp | BinaryOp BinOp | TernaryOp TernOp | TFoldOp | FoldOp
+  deriving (Eq, Ord)
 
 data Variable = X | Y | Z deriving (Show, Eq, Ord)
 
@@ -27,6 +28,32 @@ data Expr  = Zero
            | Ternary TernOp Expr Expr Expr
            deriving (Eq, Ord)
 
+-- data Ops = UnaryOp UnOp
+--          | BinaryOp BinOp
+--          | TernaryOp TernOp
+--          | TFoldOp
+--          | FoldOp deriving (Show, Eq, Ord, Generic)
+
+instance Show Ops where
+  show (UnaryOp op)   = show op
+  show (BinaryOp op)  = show op
+  show (TernaryOp op) = show op
+  show _              = "Fold"
+
+instance Read Ops where
+    readsPrec _ "not"   = [(UnaryOp Not,"")]
+    readsPrec _ "shl1"  = [(UnaryOp Shl1,"")]
+    readsPrec _ "shr1"  = [(UnaryOp Shr1,"")]
+    readsPrec _ "shr4"  = [(UnaryOp Shr4,"")]
+    readsPrec _ "shr16" = [(UnaryOp Shr16,"")]
+    readsPrec _ "and"   = [(BinaryOp And,"")]
+    readsPrec _ "or"    = [(BinaryOp Or,"")]
+    readsPrec _ "xor"   = [(BinaryOp Xor,"")]
+    readsPrec _ "plus"  = [(BinaryOp Plus,"")]
+    readsPrec _ "if0"   = [(TernaryOp IfZero,"")]
+    readsPrec _ _       = []
+
+
 instance Show UnOp where
     show Not   = "not"
     show Shl1  = "shl1"
@@ -34,14 +61,33 @@ instance Show UnOp where
     show Shr4  = "shr4"
     show Shr16 = "shr16"
 
+instance Read UnOp where
+    readsPrec _ "not"   = [(Not,"")]
+    readsPrec _ "shl1"  = [(Shl1,"")]
+    readsPrec _ "shr1"  = [(Shr1,"")]
+    readsPrec _ "shr4"  = [(Shr4,"")]
+    readsPrec _ "shr16" = [(Shr16,"")]
+    readsPrec _ _       = []
+
 instance Show BinOp where
     show And   = "and"
     show Or    = "or"
     show Xor   = "xor"
     show Plus  = "plus"
 
+instance Read BinOp where
+    readsPrec _ "and"  = [(And,"")]
+    readsPrec _ "or"   = [(Or,"")]
+    readsPrec _ "xor"  = [(Xor,"")]
+    readsPrec _ "plus" = [(Plus,"")]
+    readsPrec _ _      = []
+
 instance Show TernOp where
     show IfZero = "if0"
+
+instance Read TernOp where
+    readsPrec _ "if0" = [(IfZero,"")]
+    readsPrec _ _     = []
 
 instance Show Expr where
     show (                 Zero) = "0"
