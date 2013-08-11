@@ -255,7 +255,8 @@ generate_all ops n
     where spec_ops = specials ops
 
 generate_bonus_all :: Operators -> Int -> [Expr]
-generate_bonus_all ops n = [Ternary IfZero (Binary And e0 e1) e2 e3 | (i, j, k, l) <- quads (n-2),
+generate_bonus_all ops n = [Ternary IfZero (Binary And e0 e1) e2 e3 | n' <- [6..n],
+                                                                      (i, j, k, l) <- quads (n'-2),
                                                                       e0 <- recgen i,
                                                                       e1 <- recgen j,
                                                                       e2 <- recgen k,
@@ -279,7 +280,8 @@ l_generate_all ops n
     where spec_ops = specials ops
 
 l_generate_bonus_all :: Operators -> Int -> Integer
-l_generate_bonus_all ops n = sum [l_recgen i * l_recgen j * l_recgen k * l_recgen l | (i, j, k, l) <- quads (n-2)]
+l_generate_bonus_all ops n = sum [l_recgen i * l_recgen j * l_recgen k * l_recgen l | n' <- [6..n],
+                                                                                      (i, j, k, l) <- quads (n'-2)]
     where final_memo = loop l_generate_open Map.empty unspec_ops 0 (n-5)
           l_recgen i' = just_lookup (unspec_ops, i' `max` 0) final_memo
           unspec_ops = unspecial ops
