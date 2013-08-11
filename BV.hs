@@ -215,7 +215,7 @@ generate_open recgen ops n
                                            (i, j, k) <- triples (n-2),
                                            e0 <- recgen ops i,
                                            e1 <- recgen ops j,
-                                           e2 <- recgen (inner ops) k]
+                                           e2 <- generate (inner ops) k]
 
 integerLength xs = toInteger $ length xs
 
@@ -227,7 +227,7 @@ l_generate_open l_recgen ops n
                                                     | (i, j) <- pairs_in_order (n-1)] +
                   integerLength (ternary ops) * sum [l_recgen ops i * l_recgen ops j * l_recgen ops k
                                                     | (i, j, k) <- triples (n-1)] +
-                  integerLength (folds ops)   * sum [l_recgen ops i * l_recgen ops j * l_recgen (inner ops) k
+                  integerLength (folds ops)   * sum [l_recgen ops i * l_recgen ops j * l_generate (inner ops) k
                                                     | (i, j, k) <- triples (n-2)]
 
 show_program e0 = "(lambda (x) " ++ show e0 ++ ")"
