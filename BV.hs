@@ -57,7 +57,7 @@ instance Show TernOp where
     show IfZero = "if0"
 
 instance Show TFoldOp where
-    show TFold  = "fold"
+    show TFold  = "tfold"
 
 instance Show FoldOp where
     show Fold   = "fold"
