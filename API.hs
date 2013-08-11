@@ -3,6 +3,7 @@
 module API where
 
 import qualified Data.ByteString.Lazy.Char8 as BS
+import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as L
 import qualified Data.Text as T
 import Data.Char (toUpper)
@@ -16,6 +17,7 @@ import Data.Maybe
 import Control.Monad.IO.Class (liftIO)
 import Network.HTTP
 import Network.HTTP.Types (methodPost)
+import Network.HTTP.Types.Status (statusCode, statusMessage)
 import Network.HTTP.Conduit
 
 --hey remove this before making code public!!!!
@@ -36,8 +38,11 @@ getJSON url = do
     json <- simpleHTTP (getRequest url) >>= getResponseBody
     return (BS.pack json)
 
+data Failure = TimeOut | OtherFailure String
+  deriving Show
+
 -- makes a post request for a given json-request and yields (hopefully)
-postData :: (ToJSON a, FromJSON b) => a -> String -> IO b
+postData :: (ToJSON a, FromJSON b) => a -> String -> IO (Either Failure b)
 postData jsonBody url = do
   initRequest <- parseUrl trainURL
   let request =
@@ -46,15 +51,27 @@ postData jsonBody url = do
                     , requestBody = RequestBodyLBS (encode jsonBody)
                     }
   res <- withManager $ httpLbs request
-  let eitherJson = eitherDecode (responseBody res)
-  case eitherJson of
-    Left e -> error ("Could not decode: " ++ show (responseBody res)
-              ++ "\n" ++ show e)
-    Right training -> return training
+  let status = responseStatus res
+  return $ case statusCode status of
+       200 ->  do
+               let eitherJson = eitherDecode (responseBody res)
+               case eitherJson of
+                 Left e -> Left (OtherFailure ("Could not decode: "
+                                 ++ show (responseBody res)
+                                 ++ "\n" ++ show e))
+                 Right bVal -> Right bVal
+       410  -> Left TimeOut
+       _    -> Left (OtherFailure (B.unpack $ statusMessage status))
 
 -- prints the response of a given training request
+
 testTrain :: TrainingRequest -> IO ()
-testTrain jsonBody = (postData jsonBody trainURL :: IO Problem) >>= print
+testTrain jsonBody =
+  (postData jsonBody trainURL :: IO (Either Failure Problem)) >>= print
+
+testPost :: ToJSON a => String -> a -> IO ()
+testPost url jsonBody =
+  (postData jsonBody url :: IO (Either Failure Problem)) >>= print
 
 -- Get JSON data and decode it
 call :: FromJSON b => String -> IO b
@@ -82,19 +99,49 @@ instance FromJSON Problem where
                            o .:? "timeLeft"
     parseJSON _          = mzero
 
-data TrainingRequest = TrainingRequest {
-    reqSize       :: Maybe Int,
-    reqOperators  :: [Ops]
-} deriving (Show)
+data TrainingRequest =
+  TrainingRequest {
+                    reqSize       :: Maybe Int,
+                    reqOperators  :: [Ops]
+                  } deriving (Show)
 
 instance ToJSON TrainingRequest where
-    toJSON tReq = case reqSize tReq of
-        Nothing    -> object ["operators" .= toJSON (reqOperators tReq)]
-        Just rSize -> object ["size" .= rSize ]
+  toJSON tReq = case reqSize tReq of
+    Nothing -> object [ops]
+    Just rSize -> object [ "size" .= rSize, ops]
+    where
+     ops = "operators" .= (toJSON (reqOperators tReq))
 
 instance ToJSON Ops where
     toJSON ops = String (T.pack $ show ops)
 
+-- interface Guess {
+--     id: string;
+--     program: string;
+--    }
+
+data Guess =
+  Guess {
+          guessId   :: String,
+          guessProg :: Expr
+        }
+
+instance ToJSON Guess where
+  toJSON gReq = object [ "id"      .= guessId gReq
+                       , "program" .= guessProg gReq
+                       ]
+
+instance ToJSON Expr where
+  toJSON expr = String (T.pack $ show_program expr)
+
+-- interface GuessResponse {
+--      status: string;
+--      values?: string[];
+--      message?: string;
+--      lightning?: bool;
+--    }
+
+--TODO: add body to request
 train = call trainURL :: IO Problem
 myProblems = call problemsURL :: IO [Problem]
 
