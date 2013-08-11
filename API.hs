@@ -170,7 +170,7 @@ data EvalResponse = EvalResponse {
 instance FromJSON EvalResponse where
     parseJSON (Object o) = EvalResponse <$>
                            o .: "status" <*>
-                           o .:? "outputs" <*>
+                           liftM parse_vectors (o .:? "outputs") <*>
                            o .:? "message"
     parseJSON _          = mzero
 
