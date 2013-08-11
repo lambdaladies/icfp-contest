@@ -35,28 +35,28 @@ update_my_problems = do
 main = do
     update_my_problems
     problems_json <- readFile "myproblems2.txt"
-    print problems_json
+    putStrLn problems_json
     problems <- return $ fromJust (decode_string problems_json :: Maybe [Problem])
-    print $ "Number of problems: " ++ show (length problems)
+    putStrLn $ "Number of problems: " ++ show (length problems)
 
     to_solve <- return $ sort_problems problems
-    print $ "Number of problems to solve: " ++ show (length to_solve)
+    putStrLn $ "Number of problems to solve: " ++ show (length to_solve)
 
     solve_next_problem to_solve
 
 train tReq = do
     to_solve <- testTrain tReq
-    print $ problemSize to_solve
- -- do not train with "big" problems
+    -- do not train with "big" problems
     if want_to_solve to_solve
       then solve_next_problem [to_solve]
-      else print "too big!"
+      else putStrLn "Too big!"
 
 solve_next_problem [] = do
-    print "Done!"
+    putStrLn "Done!"
 
 solve_next_problem (p:ps) = do
-    print ""
+    putStrLn $ "\nSize: " ++ show n
+    print ops
     print p
     random <- newPureMT
     proceed <- try_next_candidate p all_candidates random
@@ -64,7 +64,7 @@ solve_next_problem (p:ps) = do
     then do
         solve_next_problem ps
     else do
-        print "Stopped."
+        putStrLn "Stopped."
     where ops = problemOperators p
           n = problemSize p
           all_candidates = generate_all ops n
@@ -84,14 +84,14 @@ try_next_candidate p candidates random0 = do
           -- make a guess
           if remaining == []
           then do
-              print "Failed, no candidates left :-("
+              putStrLn "Failed, no candidates left :-("
               return False
           else do
               guess <- return $ head remaining
               guess_response <- submit_guess p guess
               case guessRespStatus guess_response of
                 "win" -> do
-                    print "Succeeded, yay!"
+                    putStrLn "Succeeded, yay!"
                     return True
                 "mismatch" -> do
                     -- filter candidates based on counterexample
@@ -100,10 +100,10 @@ try_next_candidate p candidates random0 = do
 
                     try_next_candidate p after_ctrexample random1
                 _ -> do
-                    print $ show_error (guessRespMessage guess_response)
+                    putStrLn $ show_error (guessRespMessage guess_response)
                     return False
       _ -> do
-          print $ show_error (evalRespMessage eval_response)
+          putStrLn $ show_error (evalRespMessage eval_response)
           return False
 
 show_error (Just s) = "Error: " ++ show s

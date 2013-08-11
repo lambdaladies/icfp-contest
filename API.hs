@@ -41,7 +41,7 @@ getJSON url = do
 -- makes a post request for a given json-request and yields (hopefully)
 postData :: (ToJSON a, FromJSON b, Show b) => a -> (String -> b) -> String -> IO b
 postData jsonBody failRequest url = do
-  print $ "POST " ++ url
+  putStrLn $ "POST " ++ url
   print $ encode jsonBody
 
   initRequest <- parseUrl url
@@ -52,7 +52,7 @@ postData jsonBody failRequest url = do
                     }
   res <- withManager $ httpLbs request
   result <- return $ getPostResult res failRequest
-  print $ show result
+  print result
   return result
 
 getPostResult res failRequest = do
