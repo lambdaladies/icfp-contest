@@ -69,10 +69,12 @@ try_next_candidate p candidates random0 = do
 
                     try_next_candidate p after_ctrexample random1
                 _ -> do
-                    print $ "Error: " ++ show (guessRespMessage guess_response)
+                    print $ show_error (guessRespMessage guess_response)
       _ -> do
-          print $ "Error: " ++ show (evalRespMessage eval_response)
+          print $ show_error (evalRespMessage eval_response)
 
+show_error (Just s) = "Error: " ++ show s
+show_error Nothing  = "Error: missing error message"
 
 submit_eval_request :: Problem -> [Vector] -> IO EvalResponse
 submit_eval_request p inputs = postData EvalRequest { evalReqId = problemId p, evalReqArguments = inputs } evalURL
