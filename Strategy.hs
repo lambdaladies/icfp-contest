@@ -15,7 +15,7 @@ import qualified Data.ByteString.Lazy.Char8 as BS
 
 randomVector = randomWord64
 
-cost_threshold = 10000000
+cost_threshold = 10000000000
 
 want_to_solve p =
     not (problemSolved p) &&
