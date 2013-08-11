@@ -25,9 +25,11 @@ key = "0373FX9sGnppdRBUxTroWBx8Rb4EJ53kFAYeMNgpvpsH1H"
 
 callServer path = "http://icfpc2013.cloudapp.net/" ++ (dropWhile ('/'==) path) ++ "?auth=" ++ key
 
-statsURL = callServer "status"
-trainURL = callServer "train"
+statsURL    = callServer "status"
+trainURL    = callServer "train"
 problemsURL = callServer "myproblems"
+evalURL     = callServer "eval"
+guessURL    = callServer "guess"
 
 decode_string s = decode $ BS.pack s
 
