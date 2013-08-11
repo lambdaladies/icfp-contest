@@ -4,8 +4,10 @@ module API where
 
 import qualified Data.ByteString.Lazy.Char8 as BS
 import qualified Data.ByteString.Lazy as L
-import Data.Text hiding (dropWhile)
+import qualified Data.Text as T
+import Data.Char (toUpper)
 import Data.Aeson
+import Numeric (showHex)
 import Control.Applicative
 import Control.Monad
 import GHC.Generics
@@ -92,11 +94,41 @@ instance ToJSON TrainingRequest where
     Just rSize -> object [ "size" .= rSize ]
 
 instance ToJSON Ops where
-  toJSON ops = String (pack $ show ops)
+  toJSON ops = String (T.pack $ show ops)
 
 --TODO: add body to request
 train = call trainURL :: IO Problem
 myProblems = call problemsURL :: IO [Problem]
+
+
+-- Eval requests and responses
+
+data EvalRequest = EvalRequest {
+    evalReqId        :: String,
+    --evalReqProgram :: Maybe Program, -- we don't use this
+    evalReqArguments :: [Vector]
+} deriving (Show)
+
+instance ToJSON EvalRequest where
+    toJSON evalReq = object ["id"        .= toJSON (evalReqId evalReq),
+                             "arguments" .= toJSON (map to_hex (evalReqArguments evalReq))]
+
+to_hex :: Vector -> String
+to_hex v = "0x" ++ map toUpper (showHex v "")
+
+data EvalResponse = EvalResponse {
+    evalRespStatus  :: String,
+    evalRespOutputs :: Maybe [Vector],
+    evalRespMessage :: Maybe String
+}
+
+instance FromJSON EvalResponse where
+    parseJSON (Object o) = EvalResponse <$>
+                           o .: "status" <*>
+                           o .:? "outputs" <*>
+                           o .:? "message"
+    parseJSON _          = mzero
+
 
 -- Guesses and guess responses
 
