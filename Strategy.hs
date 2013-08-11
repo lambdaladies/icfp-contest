@@ -45,7 +45,7 @@ try_next_candidate p candidates random0 = do
     -- submit a query
     (input, random1) <- return $ randomVector random0
     eval_response <- submit_eval_request p [input]
-    case eval_response of
+    case evalRespStatus eval_response of
       "ok" -> do
           [output] <- return $ fromJust (evalRespOutputs eval_response)
 
@@ -67,7 +67,7 @@ try_next_candidate p candidates random0 = do
                     [input', output', _] <- return $ fromJust (guessRespValues guess_response)
                     after_ctrexample <- return $ filter (\c -> eval_program c input == output) (tail remaining)
 
-                    try_next_candidate after_ctrexample p random1
+                    try_next_candidate p after_ctrexample random1
                 _ -> do
                     print $ "Error: " ++ show (guessRespMessage guess_response)
       _ -> do
