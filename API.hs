@@ -43,7 +43,6 @@ getJSON url = do
 debug_request jsonBody url = do
     print $ "POST " ++ url
     print $ encode jsonBody
-    _ <- getLine
     return ()
 
 -- makes a post request for a given json-request and yields (hopefully)
