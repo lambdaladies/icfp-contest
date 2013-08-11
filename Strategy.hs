@@ -8,9 +8,6 @@ import Control.Monad
 import BV
 import API
 
-data Counterexample = Counter { input :: Vector, got :: Vector, expected :: Vector }
-data Outcome = Outcome { counter :: Maybe Counterexample }
-
 randomVector = randomWord64
 
 cost_threshold = 1000000
@@ -59,7 +56,7 @@ try_next_candidate candidates p random0 = do
     else do
         guess <- return $ head remaining
         outcome <- submit_guess guess p
-        if success outcome
+        if status outcome == "win"
         then do
             print "Succeeded, yay!"
         else
@@ -70,6 +67,6 @@ submit_query input p = do
     print $ "Query: " ++ show input ++ " " ++ show p
     return 0x0000000000000000
 
-submit_guess :: Expr -> Problem -> IO Outcome
+submit_guess :: Expr -> Problem -> IO GuessResponse
 submit_guess guess p = do
-    return Outcome { success = False }
+    return GuessResponse { status = "error", values = Nothing, message = Just "not implemented", lightning = Nothing }
