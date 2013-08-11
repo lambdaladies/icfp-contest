@@ -8,7 +8,7 @@ import Control.Monad
 import BV
 import API
 
-data Counterexample = Counter { input :: Word64, got :: Word64, expected :: Word64 }
+data Counterexample = Counter { input :: Vector, got :: Vector, expected :: Vector }
 data Outcome = Outcome { counter :: Maybe Counterexample }
 
 randomVector = randomWord64
