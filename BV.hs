@@ -146,7 +146,7 @@ eval (     Binary op2 e0 e1) env = eval_binary op2 (eval e0 env) (eval e1 env)
 eval ( Ternary op3 e0 e1 e2) env = if (eval e0 env) == 0 then (eval e1 env) else (eval e2 env) 
 eval (FoldLambdaYZ e0 e1 e2) env@(Just x, Nothing, Nothing) = foldr f (eval e1 env) (bytes $ eval e0 env)
     where f y z = eval e2 (Just x, Just y, Just z)
---eval expr env = trace ("expr:" ++ show expr ++ " env:" ++ show env) 0
+eval expr env = trace ("expr:" ++ show expr ++ " env:" ++ show env) (fromJust Nothing)
 
 -- convert a 64-bit word to a list of 8 bytes-as-words in bigendian order
 bytes i = [(shiftR i offset) .&. 0x00000000000000FF | offset <- [56,48..0]]
@@ -232,6 +232,8 @@ l_generate_open l_recgen ops n
 
 show_program e0 = "(lambda (x) " ++ show e0 ++ ")"
 size_program e0 = 1 + size e0
+
+--eval_program e0 i = trace (show e0) (eval e0 (Just i, Nothing, Nothing))
 eval_program e0 i = eval e0 (Just i, Nothing, Nothing)
 
 inner     ops = Operators { unary=unary ops, binary=binary ops, ternary=ternary ops,
