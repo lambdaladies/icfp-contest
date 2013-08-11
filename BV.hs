@@ -6,6 +6,7 @@ import qualified Data.Map as Map
 import Data.Set (Set, union, singleton, empty, member, fromList)
 import Data.Bits (Bits, (.|.), (.&.), xor, complement, shiftL, shiftR)
 import Data.Word (Word64)
+import Debug.Trace (trace)
 
 type Vector = Word64
 
@@ -148,6 +149,7 @@ eval (     Binary op2 e0 e1) env = eval_binary op2 (eval e0 env) (eval e1 env)
 eval ( Ternary op3 e0 e1 e2) env = if (eval e0 env) == 0 then (eval e1 env) else (eval e2 env) 
 eval (FoldLambdaYZ e0 e1 e2) env@(Just x, Nothing, Nothing) = foldr f (eval e1 env) (bytes $ eval e0 env)
     where f y z = eval e2 (Just x, Just y, Just z)
+--eval expr env = trace ("expr:" ++ show expr ++ " env:" ++ show env) 0
 
 -- convert a 64-bit word to a list of 8 bytes-as-words in bigendian order
 bytes i = [(shiftR i offset) .&. 0x00000000000000FF | offset <- [56,48..0]]
@@ -238,7 +240,7 @@ eval_program e0 i = eval e0 (Just i, Nothing, Nothing)
 inner     ops = Operators { unary=unary ops, binary=binary ops, ternary=ternary ops,
                             folds=folds ops, specials=[], vars=[X,Y,Z] }
 unspecial ops = Operators { unary=unary ops, binary=binary ops, ternary=ternary ops,
-                            folds=folds ops, specials=[], vars=[X,Y,Z] }
+                            folds=[], specials=[], vars=[X,Y,Z] }
 
 generate :: Operators -> Int -> [Expr]
 generate ops n
@@ -257,12 +259,12 @@ generate_all ops n
 generate_bonus_all :: Operators -> Int -> [Expr]
 generate_bonus_all ops n = [Ternary IfZero (Binary And e0 e1) e2 e3 | n' <- [6..n],
                                                                       (i, j, k, l) <- quads (n'-2),
-                                                                      e0 <- recgen i,
-                                                                      e1 <- recgen j,
-                                                                      e2 <- recgen k,
-                                                                      e3 <- recgen l]
+                                                                      e0 <- recgen unspec_ops i,
+                                                                      e1 <- recgen unspec_ops j,
+                                                                      e2 <- recgen unspec_ops k,
+                                                                      e3 <- recgen unspec_ops l]
     where final_memo = loop generate_open Map.empty unspec_ops 0 (n-5)
-          recgen i' = just_lookup (unspec_ops, i' `max` 0) final_memo
+          recgen ops' i' = just_lookup (ops', i' `max` 0) final_memo
           unspec_ops = unspecial ops
 
 l_generate :: Operators -> Int -> Integer
@@ -275,15 +277,18 @@ l_generate ops n
 l_generate_all :: Operators -> Int -> Integer
 l_generate_all ops n
     | TFold `elem` spec_ops = l_generate_all (inner ops) (n-4)
-    | Bonus `elem` spec_ops = 0 --l_generate_bonus_all ops n
+    | Bonus `elem` spec_ops = l_generate_bonus_all ops n
     | otherwise             = memoize2_and_reduce sum l_generate_open ops n
     where spec_ops = specials ops
 
 l_generate_bonus_all :: Operators -> Int -> Integer
-l_generate_bonus_all ops n = sum [l_recgen i * l_recgen j * l_recgen k * l_recgen l | n' <- [6..n],
-                                                                                      (i, j, k, l) <- quads (n'-2)]
+l_generate_bonus_all ops n = sum [l_recgen unspec_ops i *
+                                  l_recgen unspec_ops j *
+                                  l_recgen unspec_ops k *
+                                  l_recgen unspec_ops l
+                                  | n' <- [6..n], (i, j, k, l) <- quads (n'-2)]
     where final_memo = loop l_generate_open Map.empty unspec_ops 0 (n-5)
-          l_recgen i' = just_lookup (unspec_ops, i' `max` 0) final_memo
+          l_recgen ops' i' = just_lookup (ops', i' `max` 0) final_memo
           unspec_ops = unspecial ops
 
 memoize2 f ops n = just_lookup (ops, n `max` 0) final_memo
