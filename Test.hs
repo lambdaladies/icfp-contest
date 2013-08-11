@@ -11,5 +11,4 @@ testSimple = Operators [Not] [Plus] []
 
 ------- TRAINING
 testRequest = TrainingRequest (Just 10) []
-
-testTraining = testPost testRequest
+testTraining = testPost API.trainURL testRequest

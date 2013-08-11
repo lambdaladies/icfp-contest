@@ -35,8 +35,8 @@ getJSON url = do
    return (BS.pack json)
 
 -- makes a post request for a given json-request and yields (hopefully)
-postData :: TrainingRequest -> IO Problem
-postData jsonBody = do
+postData :: (ToJSON a, FromJSON b) => a -> String -> IO b
+postData jsonBody url = do
   initRequest <- parseUrl trainURL
   let request =
         initRequest { method = methodPost
@@ -51,8 +51,8 @@ postData jsonBody = do
     Right training -> return training
 
 -- prints the response of a given training request
-testPost :: TrainingRequest -> IO ()
-testPost jsonBody = postData jsonBody >>= print
+testPost :: ToJSON a => String -> a -> IO ()
+testPost url jsonBody = (postData jsonBody url :: IO Problem) >>= print
 
  -- Get JSON data and decode it
 call :: FromJSON b => String -> IO b
