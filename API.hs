@@ -51,8 +51,8 @@ postData jsonBody url = do
     Right training -> return training
 
 -- prints the response of a given training request
-testPost :: ToJSON a => String -> a -> IO ()
-testPost url jsonBody = (postData jsonBody url :: IO Problem) >>= print
+testTrain :: TrainingRequest -> IO ()
+testTrain jsonBody = (postData jsonBody trainURL :: IO Problem) >>= print
 
  -- Get JSON data and decode it
 call :: FromJSON b => String -> IO b
@@ -94,7 +94,6 @@ instance ToJSON TrainingRequest where
 instance ToJSON Ops where
   toJSON ops = String (pack $ show ops)
 
---TODO: add body to request
 train = call trainURL :: IO Problem
 myProblems = call problemsURL :: IO [Problem]
 
