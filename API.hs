@@ -33,8 +33,8 @@ decode_string s = decode $ BS.pack s
 --postRequestWithBody url "json" "test"
 getJSON :: String -> IO BS.ByteString
 getJSON url = do
-   json <- simpleHTTP (getRequest url) >>= getResponseBody
-   return (BS.pack json)
+    json <- simpleHTTP (getRequest url) >>= getResponseBody
+    return (BS.pack json)
 
 -- makes a post request for a given json-request and yields (hopefully)
 postData :: (ToJSON a, FromJSON b) => a -> String -> IO b
@@ -56,7 +56,7 @@ postData jsonBody url = do
 testTrain :: TrainingRequest -> IO ()
 testTrain jsonBody = (postData jsonBody trainURL :: IO Problem) >>= print
 
- -- Get JSON data and decode it
+-- Get JSON data and decode it
 call :: FromJSON b => String -> IO b
 call url = (>>= maybe (ioError $ userError "deserialization error")
                       return)
@@ -82,19 +82,18 @@ instance FromJSON Problem where
                            o .:? "timeLeft"
     parseJSON _          = mzero
 
-data TrainingRequest =
-   TrainingRequest {
-                     reqSize       :: Maybe Int,
-                     reqOperators  :: [Ops]
-                   } deriving (Show)
+data TrainingRequest = TrainingRequest {
+    reqSize       :: Maybe Int,
+    reqOperators  :: [Ops]
+} deriving (Show)
 
 instance ToJSON TrainingRequest where
-  toJSON tReq = case reqSize tReq of
-    Nothing    -> object ["operators" .= toJSON (reqOperators tReq)]
-    Just rSize -> object [ "size" .= rSize ]
+    toJSON tReq = case reqSize tReq of
+        Nothing    -> object ["operators" .= toJSON (reqOperators tReq)]
+        Just rSize -> object ["size" .= rSize ]
 
 instance ToJSON Ops where
-  toJSON ops = String (T.pack $ show ops)
+    toJSON ops = String (T.pack $ show ops)
 
 train = call trainURL :: IO Problem
 myProblems = call problemsURL :: IO [Problem]
@@ -132,23 +131,23 @@ instance FromJSON EvalResponse where
 -- Guesses and guess responses
 
 data GuessResponse = GuessResponse {
-  status :: String,
-  values :: Maybe [Vector],
-  message :: Maybe String,
-  lightning :: Maybe Bool
+    status    :: String,
+    values    :: Maybe [Vector],
+    message   :: Maybe String,
+    lightning :: Maybe Bool
 } deriving (Show)
 
 instance FromJSON GuessResponse where
-  parseJSON (Object o) = GuessResponse <$>
-                         o .: "status" <*>
-                         o .:? "values" <*>
-                         o .:? "message" <*>
-                         o .:? "lightning"
-  parseJSON _ = mzero
+    parseJSON (Object o) = GuessResponse <$>
+                           o .: "status" <*>
+                           o .:? "values" <*>
+                           o .:? "message" <*>
+                           o .:? "lightning"
+    parseJSON _ = mzero
 
 --testing methods
 testStatic :: String -> IO BS.ByteString
 testStatic s = do
-  return (BS.pack s)
+    return (BS.pack s)
 
 --testProblem = "{\"id\":\"ZH35UqFFcfzebGjoMB8rgYpA\",\"size\":17,\"operators\":[\"and\",\"if0\",\"or\",\"shr1\",\"shr16\",\"shr4\",\"xor\"]}"
