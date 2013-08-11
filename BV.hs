@@ -189,6 +189,10 @@ generate_open recgen ops n
                                           (i, j, k) <- triples (n-1),
                                           e0 <- recgen ops i,
                                           e1 <- recgen ops j,
+                                          e2 <- recgen ops k] ++
+                  [FoldLambdaYZ e0 e1 e2 | (i, j, k) <- triples (n-1),
+                                          e0 <- recgen ops i,
+                                          e1 <- recgen ops j,
                                           e2 <- recgen ops k]
 
 integerLength xs = toInteger $ length xs
@@ -199,6 +203,8 @@ l_generate_open l_recgen ops n
                   integerLength (binary ops)  * sum [l_recgen ops i * l_recgen ops j
                                                     | (i, j) <- pairs_in_order (n-1)] +
                   integerLength (ternary ops) * sum [l_recgen ops i * l_recgen ops j * l_recgen ops k
+                                                    | (i, j, k) <- triples (n-1)] +
+                  integerLength (folds ops) * sum [l_recgen ops i * l_recgen ops j * l_recgen ops k
                                                     | (i, j, k) <- triples (n-1)]
 
 show_program e0 = "(lambda (x) " ++ show e0 ++ ")"
