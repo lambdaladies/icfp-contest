@@ -37,10 +37,10 @@ main = do
     problems_json <- readFile "myproblems2.txt"
     print problems_json
     problems <- return $ fromJust (decode_string problems_json :: Maybe [Problem])
-    print $ length problems
+    print $ "Number of problems: " ++ show (length problems)
 
     to_solve <- return $ sort_problems problems
-    print $ length to_solve
+    print $ "Number of problems to solve: " ++ show (length to_solve)
 
     solve_next_problem to_solve
 
@@ -56,6 +56,7 @@ solve_next_problem [] = do
     print "Done!"
 
 solve_next_problem (p:ps) = do
+    print ""
     print p
     random <- newPureMT
     proceed <- try_next_candidate p all_candidates random
