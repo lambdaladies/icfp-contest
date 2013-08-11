@@ -4,6 +4,9 @@ import System.IO (FilePath, readFile)
 import System.Random.Mersenne.Pure64 (PureMT, newPureMT, randomWord64)
 import Data.Maybe (fromJust)
 import GHC.Exts (sortWith)
+import Control.Concurrent (MVar, newEmptyMVar, putMVar, takeMVar)
+import Control.Concurrent.Timer (oneShotTimer)
+import Control.Concurrent.Suspend.Lifted (Delay, sDelay)
 import Control.Monad
 import BV
 import API
@@ -71,6 +74,8 @@ solve_next_problem (p:ps) = do
 
 try_next_candidate :: Problem -> [Expr] -> PureMT -> IO Bool
 try_next_candidate p candidates random0 = do
+    delay <- set_timer $ sDelay 5 --seconds
+
     -- submit a query
     (input, random1) <- return $ randomVector random0
     eval_response <- submit_eval_request p [input]
@@ -98,6 +103,7 @@ try_next_candidate p candidates random0 = do
                     [input', output', _] <- return $ fromJust (guessRespValues guess_response)
                     after_ctrexample <- return $ filter (\c -> eval_program c input' == output') (tail remaining)
 
+                    wait_for delay
                     try_next_candidate p after_ctrexample random1
                 _ -> do
                     putStrLn $ show_error (guessRespMessage guess_response)
@@ -105,6 +111,15 @@ try_next_candidate p candidates random0 = do
       _ -> do
           putStrLn $ show_error (evalRespMessage eval_response)
           return False
+
+set_timer :: Delay -> IO (MVar ())
+set_timer d = do
+    m <- newEmptyMVar
+    oneShotTimer (do putMVar m ()) d
+    return m
+
+wait_for :: MVar () -> IO ()
+wait_for m = takeMVar m
 
 show_error (Just s) = "Error: " ++ show s
 show_error Nothing  = "Error: missing error message"
