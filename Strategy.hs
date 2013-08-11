@@ -84,7 +84,7 @@ try_next_candidate p candidates random0 = do
                 "mismatch" -> do
                     -- filter candidates based on counterexample
                     [input', output', _] <- return $ fromJust (guessRespValues guess_response)
-                    after_ctrexample <- return $ filter (\c -> eval_program c input == output) (tail remaining)
+                    after_ctrexample <- return $ filter (\c -> eval_program c input' == output') (tail remaining)
 
                     try_next_candidate p after_ctrexample random1
                 _ -> do
