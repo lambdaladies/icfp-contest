@@ -72,7 +72,7 @@ solve_next_problem (p:ps) = do
 
 try_next_candidate :: Problem -> [Expr] -> PureMT -> IO Bool
 try_next_candidate p candidates random0 = do
-    delay <- set_timer $ sDelay 5 --seconds
+    delay <- set_timer $ sDelay 10 --seconds
 
     -- submit a query
     (input, random1) <- return $ randomVector random0
@@ -101,6 +101,7 @@ try_next_candidate p candidates random0 = do
                     [input', output', _] <- return $ fromJust (guessRespValues guess_response)
                     after_ctrexample <- return $ filter (\c -> eval_program c input' == output') (tail remaining)
 
+                    putStrLn "Waiting..."
                     wait_for delay
                     try_next_candidate p after_ctrexample random1
                 _ -> do
