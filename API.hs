@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards, DeriveGeneric  #-}
+{-# LANGUAGE OverloadedStrings, RecordWildCards #-}
 
 module API where
 
