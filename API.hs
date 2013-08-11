@@ -8,7 +8,7 @@ import qualified Data.ByteString.Lazy as L
 import qualified Data.Text as T
 import Data.Char (toUpper)
 import Data.Aeson
-import Numeric (showHex)
+import Numeric (showHex, readHex)
 import Control.Applicative
 import Control.Monad
 import GHC.Generics
@@ -151,6 +151,14 @@ instance ToJSON EvalRequest where
 to_hex :: Vector -> String
 to_hex v = "0x" ++ map toUpper (showHex v "")
 
+-- fixme: error handling
+parse_vectors (Just xs) = Just (map from_hex xs)
+parse_vectors Nothing   = Nothing
+
+from_hex :: String -> Vector
+from_hex s = case readHex s of
+               [(v, "")] -> v
+
 data EvalResponse = EvalResponse {
     evalRespStatus  :: String,
     evalRespOutputs :: Maybe [Vector],
@@ -199,7 +207,7 @@ data GuessResponse = GuessResponse {
 instance FromJSON GuessResponse where
     parseJSON (Object o) = GuessResponse <$>
                            o .: "status" <*>
-                           o .:? "values" <*>
+                           liftM parse_vectors (o .:? "values") <*>
                            o .:? "message" <*>
                            o .:? "lightning"
     parseJSON _ = mzero
