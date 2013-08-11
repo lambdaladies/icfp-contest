@@ -25,7 +25,7 @@ want_to_solve p =
 
 cost p = l_generate_all (problemOperators p) (problemSize p)
 
-has_time_left (Just x) = x > 0
+has_time_left (Just x) = x > 30
 has_time_left Nothing  = True --not started
 
 sort_problems ps = sortWith cost $ filter want_to_solve ps
