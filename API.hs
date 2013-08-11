@@ -179,10 +179,10 @@ instance ToJSON Guess where
 -- }
 
 data GuessResponse = GuessResponse {
-    status    :: String,
-    values    :: Maybe [Vector],
-    message   :: Maybe String,
-    lightning :: Maybe Bool
+    guessRespStatus    :: String,
+    guessRespValues    :: Maybe [Vector],
+    guessRespMessage   :: Maybe String,
+    guessRespLightning :: Maybe Bool
 } deriving (Show)
 
 instance FromJSON GuessResponse where
