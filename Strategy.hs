@@ -1,7 +1,7 @@
 module Strategy where
 
 import System.IO (FilePath, readFile)
-import System.Random.Mersenne.Pure64 (newPureMT, randomWord64)
+import System.Random.Mersenne.Pure64 (PureMT, newPureMT, randomWord64)
 import Data.Maybe (fromJust)
 import GHC.Exts (sortWith)
 import Control.Monad
@@ -34,16 +34,25 @@ main = do
     to_solve <- return $ sort_problems problems
     print $ length to_solve
 
-    random <- newPureMT
-    solve_a_problem (head to_solve) random
+    solve_next_problem to_solve
 
-solve_a_problem p random = do
+solve_next_problem [] = do
+    print "Done!"
+
+solve_next_problem (p:ps) = do
     print p
-    try_next_candidate p all_candidates random
+    random <- newPureMT
+    proceed <- try_next_candidate p all_candidates random
+    if proceed
+    then do
+        solve_next_problem ps
+    else do
+        print "Stopped."
     where ops = problemOperators p
           n = problemSize p
           all_candidates = generate_all ops n
 
+try_next_candidate :: Problem -> [Expr] -> PureMT -> IO Bool
 try_next_candidate p candidates random0 = do
     -- submit a query
     (input, random1) <- return $ randomVector random0
@@ -59,12 +68,14 @@ try_next_candidate p candidates random0 = do
           if remaining == []
           then do
               print "Failed, no candidates left :-("
+              return False
           else do
               guess <- return $ head remaining
               guess_response <- submit_guess p guess
               case guessRespStatus guess_response of
                 "win" -> do
                     print "Succeeded, yay!"
+                    return True
                 "mismatch" -> do
                     -- filter candidates based on counterexample
                     [input', output', _] <- return $ fromJust (guessRespValues guess_response)
@@ -73,8 +84,10 @@ try_next_candidate p candidates random0 = do
                     try_next_candidate p after_ctrexample random1
                 _ -> do
                     print $ show_error (guessRespMessage guess_response)
+                    return False
       _ -> do
           print $ show_error (evalRespMessage eval_response)
+          return False
 
 show_error (Just s) = "Error: " ++ show s
 show_error Nothing  = "Error: missing error message"
