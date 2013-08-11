@@ -15,12 +15,12 @@ import qualified Data.ByteString.Lazy.Char8 as BS
 
 randomVector = randomWord64
 
---cost_threshold = 10000000000
+cost_threshold = 10000000000
 
 want_to_solve p =
     not (problemSolved p) &&
     folds (problemOperators p) == [] &&
-    --cost p < cost_threshold &&
+    cost p < cost_threshold &&
     has_time_left (problemTimeLeft p)
 
 cost p = l_generate_all (problemOperators p) (problemSize p)
