@@ -44,7 +44,7 @@ data Failure = TimeOut | OtherFailure String
 -- makes a post request for a given json-request and yields (hopefully)
 postData :: (ToJSON a, FromJSON b) => a -> String -> IO (Either Failure b)
 postData jsonBody url = do
-  initRequest <- parseUrl trainURL
+  initRequest <- parseUrl url
   let request =
         initRequest { method = methodPost
                     , requestHeaders = [("Content-Type", "application/json")]
