@@ -80,11 +80,6 @@ instance FromJSON Problem where
                            o .:? "timeLeft"
     parseJSON _          = mzero
 
--- interface TrainingRequest {
---    size?: number;
---    operators?: string[];
--- }
-
 data TrainingRequest =
    TrainingRequest {
                      reqSize       :: Maybe Int,
@@ -103,6 +98,22 @@ instance ToJSON Ops where
 train = call trainURL :: IO Problem
 myProblems = call problemsURL :: IO [Problem]
 
+-- Guesses and guess responses
+
+data GuessResponse = GuessResponse {
+  status :: String,
+  values :: Maybe [Vector],
+  message :: Maybe String,
+  lightning :: Maybe Bool
+} deriving (Show)
+
+instance FromJSON GuessResponse where
+  parseJSON (Object o) = GuessResponse <$>
+                         o .: "status" <*>
+                         o .:? "values" <*>
+                         o .:? "message" <*>
+                         o .:? "lightning"
+  parseJSON _ = mzero
 
 --testing methods
 testStatic :: String -> IO BS.ByteString
