@@ -152,12 +152,14 @@ to_hex :: Vector -> String
 to_hex v = "0x" ++ map toUpper (showHex v "")
 
 -- fixme: error handling
-parse_vectors (Just xs) = Just (map from_hex xs)
+parse_vectors (Just xs) = Just (map (fromJust . from_hex) xs)
 parse_vectors Nothing   = Nothing
 
-from_hex :: String -> Vector
-from_hex s = case readHex s of
-               [(v, "")] -> v
+from_hex :: String -> Maybe Vector
+from_hex ('0':'x':s) = case readHex s of
+                         [(v, "")] -> Just v
+                         _         -> Nothing
+from_hex _           = Nothing
 
 data EvalResponse = EvalResponse {
     evalRespStatus  :: String,
