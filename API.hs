@@ -15,7 +15,7 @@ import GHC.Generics
 import BV
 import Data.Maybe
 import Control.Monad.IO.Class (liftIO)
-import Control.Exception (try, Exception)
+import Control.Exception (try, SomeException)
 import Network.HTTP
 import Network.HTTP.Types (methodPost)
 import Network.HTTP.Types.Status (statusCode, statusMessage)
@@ -53,7 +53,7 @@ postData jsonBody failRequest url = do
                     }
   response <- try (withManager $ httpLbs request)
   result <- return $ case response of
-                       Left ResponseTimeout -> failRequest "ResponseTimeout"
+                       Left e -> failRequest $ show (e :: SomeException)
                        Right res -> getPostResult res failRequest
   print result
   return result
