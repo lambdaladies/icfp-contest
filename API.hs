@@ -163,7 +163,7 @@ data EvalResponse = EvalResponse {
     evalRespStatus  :: String,
     evalRespOutputs :: Maybe [Vector],
     evalRespMessage :: Maybe String
-}
+} deriving (Show)
 
 instance FromJSON EvalResponse where
     parseJSON (Object o) = EvalResponse <$>
@@ -183,7 +183,7 @@ instance FromJSON EvalResponse where
 data Guess = Guess {
     guessId      :: String,
     guessProgram :: Expr
-}
+} deriving (Show)
 
 instance ToJSON Guess where
   toJSON gReq = object [ "id"      .= guessId gReq
