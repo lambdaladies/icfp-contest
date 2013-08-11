@@ -56,11 +56,12 @@ try_next_candidate candidates p random0 = do
     else do
         guess <- return $ head remaining
         outcome <- submit_guess guess p
-        if status outcome == "win"
-        then do
-            print "Succeeded, yay!"
-        else
-            try_next_candidate (tail remaining) p random1
+        case status outcome of
+           "win"      -> do print "Succeeded, yay!"
+           "mismatch" -> do
+                             -- something cleverer than this
+                             try_next_candidate (tail remaining) p random1
+           _          -> do print $ "Error: " ++ show (message outcome)
 
 submit_query :: Vector -> Problem -> IO Vector
 submit_query input p = do
