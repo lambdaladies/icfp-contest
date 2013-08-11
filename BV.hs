@@ -9,13 +9,13 @@ import Data.Word (Word64)
 
 type Vector = Word64
 
-data UnOp    = Not | Shl1 | Shr1 | Shr4 | Shr16 deriving (Eq, Ord)
-data BinOp   = And | Or | Xor | Plus deriving (Eq, Ord)
-data TernOp  = IfZero deriving (Eq, Ord)
-data FoldOp  = Fold deriving (Eq, Ord)
-data TFoldOp = TFold deriving (Eq, Ord)
+data UnOp      = Not | Shl1 | Shr1 | Shr4 | Shr16 deriving (Eq, Ord)
+data BinOp     = And | Or | Xor | Plus deriving (Eq, Ord)
+data TernOp    = IfZero deriving (Eq, Ord)
+data FoldOp    = Fold deriving (Eq, Ord)
+data SpecialOp = TFold | Bonus deriving (Eq, Ord)
 
-data Ops = UnaryOp UnOp | BinaryOp BinOp | TernaryOp TernOp | FoldOp | TFoldOp
+data Ops = UnaryOp UnOp | BinaryOp BinOp | TernaryOp TernOp | FoldOp | SpecialOp
   deriving (Show, Eq, Ord)
 
 data Variable = X | Y | Z deriving (Eq, Ord)
@@ -32,26 +32,26 @@ data Expr  = Zero
            deriving (Eq, Ord)
 
 data Operators = Operators {
-    unary   :: [UnOp],
-    binary  :: [BinOp],
-    ternary :: [TernOp],
-    folds   :: [FoldOp],
-    tfolds  :: [TFoldOp],
-    vars    :: [Variable]
+    unary    :: [UnOp],
+    binary   :: [BinOp],
+    ternary  :: [TernOp],
+    folds    :: [FoldOp],
+    specials :: [SpecialOp],
+    vars     :: [Variable]
 } deriving (Show, Eq, Ord)
 
 instance Show UnOp where
-    show Not   = "not"
-    show Shl1  = "shl1"
-    show Shr1  = "shr1"
-    show Shr4  = "shr4"
-    show Shr16 = "shr16"
+    show Not    = "not"
+    show Shl1   = "shl1"
+    show Shr1   = "shr1"
+    show Shr4   = "shr4"
+    show Shr16  = "shr16"
 
 instance Show BinOp where
-    show And   = "and"
-    show Or    = "or"
-    show Xor   = "xor"
-    show Plus  = "plus"
+    show And    = "and"
+    show Or     = "or"
+    show Xor    = "xor"
+    show Plus   = "plus"
 
 instance Show TernOp where
     show IfZero = "if0"
@@ -59,8 +59,9 @@ instance Show TernOp where
 instance Show FoldOp where
     show Fold   = "fold"
 
-instance Show TFoldOp where
+instance Show SpecialOp where
     show TFold  = "tfold"
+    show Bonus  = "bonus"
 
 instance Show Variable where
     show X      = "x"
@@ -68,40 +69,41 @@ instance Show Variable where
     show Z      = "z"
 
 parse_unary :: String -> Maybe UnOp
-parse_unary   "not"   = Just Not
-parse_unary   "shl1"  = Just Shl1
-parse_unary   "shr1"  = Just Shr1
-parse_unary   "shr4"  = Just Shr4
-parse_unary   "shr16" = Just Shr16
-parse_unary   _       = Nothing
+parse_unary    "not"   = Just Not
+parse_unary    "shl1"  = Just Shl1
+parse_unary    "shr1"  = Just Shr1
+parse_unary    "shr4"  = Just Shr4
+parse_unary    "shr16" = Just Shr16
+parse_unary    _       = Nothing
 
 parse_binary :: String -> Maybe BinOp
-parse_binary  "and"   = Just And
-parse_binary  "or"    = Just Or
-parse_binary  "xor"   = Just Xor
-parse_binary  "plus"  = Just Plus
-parse_binary  _       = Nothing
+parse_binary   "and"   = Just And
+parse_binary   "or"    = Just Or
+parse_binary   "xor"   = Just Xor
+parse_binary   "plus"  = Just Plus
+parse_binary   _       = Nothing
 
 parse_ternary :: String -> Maybe TernOp
-parse_ternary "if0"   = Just IfZero
-parse_ternary _       = Nothing
+parse_ternary  "if0"   = Just IfZero
+parse_ternary  _       = Nothing
 
 parse_folds :: String -> Maybe FoldOp
-parse_folds   "fold"  = Just Fold
-parse_folds   _       = Nothing
+parse_folds    "fold"  = Just Fold
+parse_folds    _       = Nothing
 
-parse_tfolds :: String -> Maybe TFoldOp
-parse_tfolds  "tfold" = Just TFold
-parse_tfolds  _       = Nothing
+parse_specials :: String -> Maybe SpecialOp
+parse_specials "tfold" = Just TFold
+parse_specials "bonus" = Just Bonus
+parse_specials _       = Nothing
 
 parse_opstrings :: [String] -> Operators
 parse_opstrings opstrings = Operators {
-    unary   = catMaybes $ map parse_unary   opstrings,
-    binary  = catMaybes $ map parse_binary  opstrings,
-    ternary = catMaybes $ map parse_ternary opstrings,
-    folds   = catMaybes $ map parse_folds   opstrings,
-    tfolds  = catMaybes $ map parse_tfolds  opstrings,
-    vars    = [X]
+    unary    = catMaybes $ map parse_unary    opstrings,
+    binary   = catMaybes $ map parse_binary   opstrings,
+    ternary  = catMaybes $ map parse_ternary  opstrings,
+    folds    = catMaybes $ map parse_folds    opstrings,
+    specials = catMaybes $ map parse_specials opstrings,
+    vars     = [X]
 }
 
 instance Show Expr where
@@ -128,9 +130,6 @@ opset (FoldLambdaYZ e0 e1 e2) = (singleton FoldOp) `union` (opset e0) `union` (o
 opset (         Unary op1 e0) = (singleton $ UnaryOp op1) `union` (opset  e0)
 opset (     Binary op2 e0 e1) = (singleton $ BinaryOp op2) `union` (opset  e0) `union` (opset  e1)
 opset ( Ternary op3 e0 e1 e2) = (singleton $ TernaryOp op3) `union` (opset  e0) `union` (opset  e1) `union` (opset  e2)
-
-operators (FoldLambdaYZ (Var X) Zero e) = (singleton TFoldOp) `union` (opset e)
-operators e                             = opset e
 
 -- Whole programs
 interp :: Expr -> Vector -> Vector
@@ -171,11 +170,16 @@ unary_ops = [Not, Shl1, Shr1, Shr4, Shr16]
 binary_ops = [And, Or, Xor, Plus]
 ternary_ops = [IfZero]
 fold_ops = [Fold]
-tfold_ops = [TFold]
-all_without_tfold = Operators { unary=unary_ops, binary=binary_ops, ternary=ternary_ops,
-                                folds=fold_ops, tfolds=[], vars=[X] }
-all_with_tfold    = Operators { unary=unary_ops, binary=binary_ops, ternary=ternary_ops,
-                                folds=fold_ops, tfolds=tfold_ops, vars=[X] }
+
+all_general    = Operators { unary=unary_ops, binary=binary_ops, ternary=ternary_ops,
+                             folds=fold_ops, specials=[], vars=[X] }
+all_with_tfold = Operators { unary=unary_ops, binary=binary_ops, ternary=ternary_ops,
+                             folds=fold_ops, specials=[TFold], vars=[X] }
+all_with_bonus = Operators { unary=unary_ops, binary=binary_ops, ternary=ternary_ops,
+                             folds=fold_ops, specials=[Bonus], vars=[X] }
+
+quads :: ExprSize -> [(ExprSize, ExprSize, ExprSize, ExprSize)]
+quads x = [(i, j, k, l) | k <- [1..(x-3)], l <- [1..(x-k-2)], (i, j) <- pairs_in_order (x-k-l)]
 
 triples :: ExprSize -> [(ExprSize, ExprSize, ExprSize)]
 triples x = [(i, j, k) | i <- [1..(x-2)], (j, k) <- pairs (x-i)]
@@ -231,28 +235,54 @@ show_program e0 = "(lambda (x) " ++ show e0 ++ ")"
 size_program e0 = 1 + size e0
 eval_program e0 i = eval e0 (Just i, Nothing, Nothing)
 
-inner_ops ops = Operators { unary=unary ops, binary=binary ops, ternary=ternary ops,
-                            folds=folds ops, tfolds=[], vars=[X,Y,Z] }
+inner     ops = Operators { unary=unary ops, binary=binary ops, ternary=ternary ops,
+                            folds=folds ops, specials=[], vars=[X,Y,Z] }
+unspecial ops = Operators { unary=unary ops, binary=binary ops, ternary=ternary ops,
+                            folds=folds ops, specials=[], vars=[X,Y,Z] }
 
 generate :: Operators -> Int -> [Expr]
 generate ops n
-    | tfolds ops /= [] = [FoldLambdaYZ (Var X) Zero e | e <- generate (inner_ops ops) (n-4)]
-    | otherwise        = memoize2 generate_open ops n
+    | TFold `elem` spec_ops = [FoldLambdaYZ (Var X) Zero e | e <- generate (inner ops) (n-4)]
+    -- Bonus not handled
+    | otherwise             = memoize2 generate_open ops n
+    where spec_ops = specials ops
 
 generate_all :: Operators -> Int -> [Expr]
 generate_all ops n
-    | tfolds ops /= [] = [FoldLambdaYZ (Var X) Zero e | e <- generate_all (inner_ops ops) (n-4)]
-    | otherwise        = memoize2_and_reduce concat generate_open ops n
+    | TFold `elem` spec_ops = [FoldLambdaYZ (Var X) Zero e | e <- generate_all (inner ops) (n-4)]
+    | Bonus `elem` spec_ops = generate_bonus_all ops n
+    | otherwise             = memoize2_and_reduce concat generate_open ops n
+    where spec_ops = specials ops
+
+generate_bonus_all :: Operators -> Int -> [Expr]
+generate_bonus_all ops n = [Ternary IfZero (Binary And e0 e1) e2 e3 | (i, j, k, l) <- quads (n-2),
+                                                                      e0 <- recgen i,
+                                                                      e1 <- recgen j,
+                                                                      e2 <- recgen k,
+                                                                      e3 <- recgen l]
+    where final_memo = loop generate_open Map.empty unspec_ops 0 (n-5)
+          recgen i' = just_lookup (unspec_ops, i' `max` 0) final_memo
+          unspec_ops = unspecial ops
 
 l_generate :: Operators -> Int -> Integer
 l_generate ops n
-    | tfolds ops /= [] = l_generate (inner_ops ops) (n-4)
-    | otherwise        = memoize2 l_generate_open ops n
+    | TFold `elem` spec_ops = l_generate (inner ops) (n-4)
+    -- Bonus not handled
+    | otherwise             = memoize2 l_generate_open ops n
+    where spec_ops = specials ops
 
 l_generate_all :: Operators -> Int -> Integer
 l_generate_all ops n
-    | tfolds ops /= [] = l_generate_all (inner_ops ops) (n-4)
-    | otherwise        = memoize2_and_reduce sum l_generate_open ops n
+    | TFold `elem` spec_ops = l_generate_all (inner ops) (n-4)
+    | Bonus `elem` spec_ops = 0 --l_generate_bonus_all ops n
+    | otherwise             = memoize2_and_reduce sum l_generate_open ops n
+    where spec_ops = specials ops
+
+l_generate_bonus_all :: Operators -> Int -> Integer
+l_generate_bonus_all ops n = sum [l_recgen i * l_recgen j * l_recgen k * l_recgen l | (i, j, k, l) <- quads (n-2)]
+    where final_memo = loop l_generate_open Map.empty unspec_ops 0 (n-5)
+          l_recgen i' = just_lookup (unspec_ops, i' `max` 0) final_memo
+          unspec_ops = unspecial ops
 
 memoize2 f ops n = just_lookup (ops, n `max` 0) final_memo
     where final_memo = loop f Map.empty ops 0 n
