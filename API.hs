@@ -58,7 +58,7 @@ postData jsonBody failRequest responseTimeout url = do
     case response of
       Left ResponseTimeout ->
       -- retry with higher responseTimeout value
-        postData jsonBody failRequest (responseTimeout + 1000000) url
+        postData jsonBody failRequest (increase_timeout responseTimeout) url
       Left (StatusCodeException s _ _) ->
         case statusCode s of
           410  -> return $ failRequest "Timeout"
@@ -91,7 +91,7 @@ postData jsonBody failRequest responseTimeout url = do
 
 testTrain :: TrainingRequest -> IO Problem
 testTrain jsonBody =
-  postData jsonBody dummy_problem 1000000 trainURL :: IO Problem
+  postData jsonBody dummy_problem default_res_timeout trainURL :: IO Problem
 
 dummy_problem msg = Problem { problemId = "Error: " ++ msg,
                               problemSize = 0,
@@ -100,7 +100,8 @@ dummy_problem msg = Problem { problemId = "Error: " ++ msg,
                               problemSolved = False,
                               problemTimeLeft = Nothing }
 
-default_res_timeout = 1000000
+default_res_timeout = 10000000
+increase_timeout s  = s + 5000000
 
 testPost :: ToJSON a => String -> a -> IO ()
 testPost url jsonBody =
