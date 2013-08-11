@@ -168,7 +168,7 @@ data Guess = Guess {
 
 instance ToJSON Guess where
   toJSON gReq = object [ "id"      .= guessId gReq
-                       , "program" .= guessProgram gReq
+                       , "program" .= show_program (guessProgram gReq)
                        ]
 
 -- interface GuessResponse {
