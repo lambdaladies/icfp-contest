@@ -6,7 +6,7 @@ import Data.Maybe (fromJust)
 import GHC.Exts (sortWith)
 import Control.Concurrent (MVar, newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.Timer (oneShotTimer)
-import Control.Concurrent.Suspend.Lifted (Delay, sDelay)
+import Control.Concurrent.Suspend.Lifted (Delay, msDelay)
 import Control.Monad
 import BV
 import API
@@ -38,7 +38,7 @@ update_my_problems = do
 main = do
     update_my_problems
     problems_json <- readFile "myproblems2.txt"
-    putStrLn problems_json
+    --putStrLn problems_json
     problems <- return $ fromJust (decode_string problems_json :: Maybe [Problem])
     putStrLn $ "Number of problems: " ++ show (length problems)
 
@@ -72,7 +72,7 @@ solve_next_problem (p:ps) = do
 
 try_next_candidate :: Problem -> [Expr] -> PureMT -> IO Bool
 try_next_candidate p candidates random0 = do
-    delay <- set_timer $ sDelay 10 --seconds
+    delay_before_guess <- set_timer $ msDelay 5500
 
     -- submit a query
     (input, random1) <- return $ randomVector random0
@@ -90,6 +90,10 @@ try_next_candidate p candidates random0 = do
               putStrLn "Failed, no candidates left :-("
               return False
           else do
+              putStrLn "Waiting..."
+              wait_for delay_before_guess
+
+              delay_before_next <- set_timer $ msDelay 5500
               guess <- return $ head remaining
               guess_response <- submit_guess p guess
               case guessRespStatus guess_response of
@@ -102,14 +106,22 @@ try_next_candidate p candidates random0 = do
                     after_ctrexample <- return $ filter (\c -> eval_program c input' == output') (tail remaining)
 
                     putStrLn "Waiting..."
-                    wait_for delay
+                    wait_for delay_before_next
                     try_next_candidate p after_ctrexample random1
                 _ -> do
-                    putStrLn $ show_error (guessRespMessage guess_response)
-                    return False
+                    confirm $ show_error (guessRespMessage guess_response)
       _ -> do
-          putStrLn $ show_error (evalRespMessage eval_response)
-          return False
+          confirm $ show_error (evalRespMessage eval_response)
+
+confirm :: String -> IO Bool
+confirm msg = do
+    putStrLn msg
+    putStrLn "Continue after error ('n' to stop)?"
+    answer <- getLine
+    let res = case answer of
+                ('n':_) -> False
+                _       -> True
+    return res
 
 set_timer :: Delay -> IO (MVar ())
 set_timer d = do
