@@ -44,7 +44,7 @@ data Failure = TimeOut | OtherFailure String
   deriving Show
 
 -- makes a post request for a given json-request and yields (hopefully)
-postData :: (ToJSON a, FromJSON b) => a -> String -> IO (Either Failure b)
+postData :: (ToJSON a, FromJSON b) => a -> String -> IO b
 postData jsonBody url = do
   initRequest <- parseUrl url
   let request =
@@ -53,27 +53,21 @@ postData jsonBody url = do
                     , requestBody = RequestBodyLBS (encode jsonBody)
                     }
   res <- withManager $ httpLbs request
-  let status = responseStatus res
-  return $ case statusCode status of
-       200 ->  do
-               let eitherJson = eitherDecode (responseBody res)
-               case eitherJson of
-                 Left e -> Left (OtherFailure ("Could not decode: "
-                                 ++ show (responseBody res)
-                                 ++ "\n" ++ show e))
-                 Right bVal -> Right bVal
-       410  -> Left TimeOut
-       _    -> Left (OtherFailure (B.unpack $ statusMessage status))
+  let eitherJson = eitherDecode (responseBody res)
+  case eitherJson of
+    Left e -> error ("Could not decode: " ++ show (responseBody res)
+              ++ "\n" ++ show e)
+    Right training -> return training
 
 -- prints the response of a given training request
 
 testTrain :: TrainingRequest -> IO ()
 testTrain jsonBody =
-  (postData jsonBody trainURL :: IO (Either Failure Problem)) >>= print
+  (postData jsonBody trainURL :: IO Problem) >>= print
 
 testPost :: ToJSON a => String -> a -> IO ()
 testPost url jsonBody =
-  (postData jsonBody url :: IO (Either Failure Problem)) >>= print
+  (postData jsonBody url :: IO Problem) >>= print
 
 -- Get JSON data and decode it
 call :: FromJSON b => String -> IO b
