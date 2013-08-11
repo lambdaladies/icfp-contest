@@ -77,7 +77,15 @@ show_error (Just s) = "Error: " ++ show s
 show_error Nothing  = "Error: missing error message"
 
 submit_eval_request :: Problem -> [Vector] -> IO EvalResponse
-submit_eval_request p inputs = postData EvalRequest { evalReqId = problemId p, evalReqArguments = inputs } evalURL
+submit_eval_request p inputs = postData EvalRequest { evalReqId = problemId p, evalReqArguments = inputs } fail_eval_request evalURL
+
+fail_eval_request :: String -> EvalResponse
+fail_eval_request msg = EvalResponse { evalRespStatus = "error", evalRespOutputs = Nothing,
+                                       evalRespMessage = Just msg }
 
 submit_guess :: Problem -> Expr -> IO GuessResponse
-submit_guess p guess = postData Guess { guessId = problemId p, guessProgram = guess } guessURL
+submit_guess p guess = postData Guess { guessId = problemId p, guessProgram = guess } fail_guess guessURL
+
+fail_guess :: String -> GuessResponse
+fail_guess msg = GuessResponse { guessRespStatus = "error", guessRespValues = Nothing, guessRespLightning = Nothing,
+                                 guessRespMessage = Just msg }

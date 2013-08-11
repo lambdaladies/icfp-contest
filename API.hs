@@ -40,12 +40,9 @@ getJSON url = do
     json <- simpleHTTP (getRequest url) >>= getResponseBody
     return (BS.pack json)
 
-data Failure = TimeOut | OtherFailure String
-  deriving Show
-
 -- makes a post request for a given json-request and yields (hopefully)
-postData :: (ToJSON a, FromJSON b) => a -> String -> IO (Either Failure b)
-postData jsonBody url = do
+postData :: (ToJSON a, FromJSON b) => a -> (String -> b) -> String -> IO b
+postData jsonBody failRequest url = do
   initRequest <- parseUrl url
   let request =
         initRequest { method = methodPost
@@ -58,22 +55,29 @@ postData jsonBody url = do
        200 ->  do
                let eitherJson = eitherDecode (responseBody res)
                case eitherJson of
-                 Left e -> Left (OtherFailure ("Could not decode: "
-                                 ++ show (responseBody res)
-                                 ++ "\n" ++ show e))
-                 Right bVal -> Right bVal
-       410  -> Left TimeOut
-       _    -> Left (OtherFailure (B.unpack $ statusMessage status))
+                 Left e -> failRequest ("Could not decode: "
+                                        ++ show (responseBody res)
+                                        ++ "\n" ++ show e)
+                 Right bVal -> bVal
+       410  -> failRequest "Timeout"
+       _    -> failRequest (B.unpack $ statusMessage status)
 
 -- prints the response of a given training request
 
 testTrain :: TrainingRequest -> IO ()
 testTrain jsonBody =
-  (postData jsonBody trainURL :: IO (Either Failure Problem)) >>= print
+  (postData jsonBody dummy_problem trainURL :: IO Problem) >>= print
+
+dummy_problem msg = Problem { problemId = "Error: " ++ msg,
+                              problemSize = 0,
+                              problemOperators = Operators { unary=[], binary=[], ternary=[], folds=[] },
+                              problemChallenge = Nothing,
+                              problemSolved = False,
+                              problemTimeLeft = Nothing }
 
 testPost :: ToJSON a => String -> a -> IO ()
 testPost url jsonBody =
-  (postData jsonBody url :: IO (Either Failure Problem)) >>= print
+  (postData jsonBody dummy_problem url :: IO Problem) >>= print
 
 -- Get JSON data and decode it
 call :: FromJSON b => String -> IO b
