@@ -15,10 +15,13 @@ cost_threshold = 1000000
 want_to_solve p =
     not (problemSolved p) &&
     folds (problemOperators p) == [] &&
-    cost p < cost_threshold
-    -- && problemTimeLeft p > 60
+    cost p < cost_threshold &&
+    has_time_left (problemTimeLeft p)
 
 cost p = l_generate_all (problemOperators p) (problemSize p)
+
+has_time_left (Just x) = x > 0
+has_time_left Nothing  = False
 
 sort_problems ps = sortWith cost $ filter want_to_solve ps
 
