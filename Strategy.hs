@@ -36,38 +36,46 @@ main = do
 
 solve_a_problem p random = do
     print p
-    try_next_candidate all_candidates p random
+    try_next_candidate p all_candidates random
     where ops = problemOperators p
           n = problemSize p
           all_candidates = generate_all ops n
 
-try_next_candidate candidates p random0 = do
+try_next_candidate p candidates random0 = do
     -- submit a query
     (input, random1) <- return $ randomVector random0
-    output <- submit_query input p
+    eval_response <- submit_eval_request p [input]
+    case eval_response of
+      "ok" -> do
+          [output] <- return $ fromJust (evalRespOutputs eval_response)
 
-    -- filter candidates
-    remaining <- return $ filter (\c -> eval_program c input == output) candidates
+          -- filter candidates based on eval
+          remaining <- return $ filter (\c -> eval_program c input == output) candidates
 
-    -- make a guess
-    if remaining == []
-    then do
-        print "Failed, no candidates left :-("
-    else do
-        guess <- return $ head remaining
-        outcome <- submit_guess guess p
-        case status outcome of
-           "win"      -> do print "Succeeded, yay!"
-           "mismatch" -> do
-                             -- something cleverer than this
-                             try_next_candidate (tail remaining) p random1
-           _          -> do print $ "Error: " ++ show (message outcome)
+          -- make a guess
+          if remaining == []
+          then do
+              print "Failed, no candidates left :-("
+          else do
+              guess <- return $ head remaining
+              guess_response <- submit_guess p guess
+              case guessRespStatus guess_response of
+                "win" -> do
+                    print "Succeeded, yay!"
+                "mismatch" -> do
+                    -- filter candidates based on counterexample
+                    [input', output', _] <- return $ fromJust (guessRespValues guess_response)
+                    after_ctrexample <- return $ filter (\c -> eval_program c input == output) (tail remaining)
 
-submit_query :: Vector -> Problem -> IO Vector
-submit_query input p = do
-    print $ "Query: " ++ show input ++ " " ++ show p
-    return 0x0000000000000000
+                    try_next_candidate after_ctrexample p random1
+                _ -> do
+                    print $ "Error: " ++ show (guessRespMessage guess_response)
+      _ -> do
+          print $ "Error: " ++ show (evalRespMessage eval_response)
 
-submit_guess :: Expr -> Problem -> IO GuessResponse
-submit_guess guess p = do
-    return GuessResponse { status = "error", values = Nothing, message = Just "not implemented", lightning = Nothing }
+
+submit_eval_request :: Problem -> [Vector] -> IO EvalResponse
+submit_eval_request p inputs = postData EvalRequest { evalReqId = problemId p, evalReqArguments = inputs } evalURL
+
+submit_guess :: Problem -> Expr -> IO GuessResponse
+submit_guess p guess = postData Guess { guessId = problemId p, guessProgram = guess } guessURL
