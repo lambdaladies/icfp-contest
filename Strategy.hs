@@ -7,6 +7,8 @@ import GHC.Exts (sortWith)
 import Control.Monad
 import BV
 import API
+import qualified Data.ByteString.Lazy.Char8 as BS
+
 
 randomVector = randomWord64
 
@@ -25,9 +27,15 @@ has_time_left Nothing  = True --not started
 
 sort_problems ps = sortWith cost $ filter want_to_solve ps
 
+update_my_problems :: IO ()
+update_my_problems = do
+  problems <- getJSON problemsURL
+  writeFile "myproblems2.txt" (BS.unpack problems)
+
 main = do
-    problems_json <- readFile "myproblems.txt"
-    --print problems_json
+    update_my_problems
+    problems_json <- readFile "myproblems2.txt"
+    print problems_json
     problems <- return $ fromJust (decode_string problems_json :: Maybe [Problem])
     print $ length problems
 
@@ -36,10 +44,13 @@ main = do
 
     solve_next_problem to_solve
 
-train = do
-    to_solve <- testTrain (TrainingRequest (Just 10) []) 
+train tReq = do
+    to_solve <- testTrain tReq
     print $ problemSize to_solve
-    solve_next_problem [to_solve]
+ -- do not train with "big" problems
+    if want_to_solve to_solve
+      then solve_next_problem [to_solve]
+      else print "too big!"
 
 solve_next_problem [] = do
     print "Done!"
@@ -68,7 +79,7 @@ try_next_candidate p candidates random0 = do
 
           -- filter candidates based on eval
           remaining <- return $ filter (\c -> eval_program c input == output) candidates
-
+          putStrLn ("\n" ++ show (length remaining) ++ "\n")
           -- make a guess
           if remaining == []
           then do

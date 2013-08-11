@@ -11,6 +11,5 @@ testIf   = Operators [] [] [IfZero]
 testSimple = Operators [Not] [Plus] []
 
 ------- TRAINING
-testRequest = TrainingRequest (Just 10) []
-testTraining = testTrain testRequest
-
+testRequest n = TrainingRequest (Just n) []
+testTraining n = testTrain (testRequest n)
