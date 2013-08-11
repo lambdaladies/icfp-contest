@@ -235,7 +235,7 @@ size_program e0 = 1 + size e0
 eval_program e0 i = eval e0 (Just i, Nothing, Nothing)
 
 inner     ops = Operators { unary=unary ops, binary=binary ops, ternary=ternary ops,
-                            folds=folds ops, specials=[], vars=[X,Y,Z] }
+                            folds=[], specials=[], vars=[X,Y,Z] }
 unspecial ops = Operators { unary=unary ops, binary=binary ops, ternary=ternary ops,
                             folds=[], specials=[], vars=[X] }
 
