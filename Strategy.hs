@@ -44,38 +44,42 @@ solve_a_problem p random = do
 try_next_candidate p candidates random0 = do
     -- submit a query
     (input, random1) <- return $ randomVector random0
-    eval_response <- submit_eval_request p [input]
-    case eval_response of
-      "ok" -> do
-          [output] <- return $ fromJust (evalRespOutputs eval_response)
+    eval_response_either <- submit_eval_request p 
+    case eval_response_either of
+        Left eval_response_record -> 
+            let eval_response = eval_response [input]
+            case eval_response of
+              "ok" -> do
+                  [output] <- return $ fromJust (evalRespOutputs eval_response)
 
-          -- filter candidates based on eval
-          remaining <- return $ filter (\c -> eval_program c input == output) candidates
+                  -- filter candidates based on eval
+                  remaining <- return $ filter (\c -> eval_program c input == output) candidates
 
-          -- make a guess
-          if remaining == []
-          then do
-              print "Failed, no candidates left :-("
-          else do
-              guess <- return $ head remaining
-              guess_response <- submit_guess p guess
-              case guessRespStatus guess_response of
-                "win" -> do
-                    print "Succeeded, yay!"
-                "mismatch" -> do
-                    -- filter candidates based on counterexample
-                    [input', output', _] <- return $ fromJust (guessRespValues guess_response)
-                    after_ctrexample <- return $ filter (\c -> eval_program c input == output) (tail remaining)
+                  -- make a guess
+                  if remaining == []
+                  then do
+                      print "Failed, no candidates left :-("
+                  else do
+                      guess <- return $ head remaining
+                      guess_response <- submit_guess p guess
+                      case guessRespStatus guess_response of
+                        "win" -> do
+                            print "Succeeded, yay!"
+                        "mismatch" -> do
+                            -- filter candidates based on counterexample
+                            [input', output', _] <- return $ fromJust (guessRespValues guess_response)
+                            after_ctrexample <- return $ filter (\c -> eval_program c input == output) (tail remaining)
 
-                    try_next_candidate after_ctrexample p random1
-                _ -> do
-                    print $ "Error: " ++ show (guessRespMessage guess_response)
-      _ -> do
-          print $ "Error: " ++ show (evalRespMessage eval_response)
+                            try_next_candidate after_ctrexample p random1
+                        _ -> do
+                            print $ "Error: " ++ show (guessRespMessage guess_response)
+              _ -> do
+                  print $ "Error: " ++ show (evalRespMessage eval_response)
+        Right the_error -> print "Error calling /eval"
 
 
-submit_eval_request :: Problem -> [Vector] -> IO EvalResponse
+submit_eval_request :: Problem -> [Vector] -> IO (Either Failure EvalResponse)
 submit_eval_request p inputs = postData EvalRequest { evalReqId = problemId p, evalReqArguments = inputs } evalURL
 
-submit_guess :: Problem -> Expr -> IO GuessResponse
+submit_guess :: Problem -> Expr -> IO (Either Failure GuessResponse)
 submit_guess p guess = postData Guess { guessId = problemId p, guessProgram = guess } guessURL
