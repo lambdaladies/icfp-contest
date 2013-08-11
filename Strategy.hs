@@ -58,8 +58,6 @@ solve_next_problem [] = do
     putStrLn "Done!"
 
 solve_next_problem (p:ps) = do
-    putStrLn $ "\nSize: " ++ show n
-    print ops
     print p
     random <- newPureMT
     proceed <- try_next_candidate p all_candidates random
