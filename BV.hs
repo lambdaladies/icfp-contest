@@ -15,7 +15,7 @@ data TernOp  = IfZero deriving (Eq, Ord)
 data FoldOp  = Fold deriving (Eq, Ord)
 data TFoldOp = TFold deriving (Eq, Ord)
 
-data Ops = UnaryOp UnOp | BinaryOp BinOp | TernaryOp TernOp | TFoldOp | FoldOp
+data Ops = UnaryOp UnOp | BinaryOp BinOp | TernaryOp TernOp | FoldOp | TFoldOp
   deriving (Show, Eq, Ord)
 
 data Variable = X | Y | Z deriving (Eq, Ord)
@@ -56,11 +56,11 @@ instance Show BinOp where
 instance Show TernOp where
     show IfZero = "if0"
 
-instance Show TFoldOp where
-    show TFold  = "tfold"
-
 instance Show FoldOp where
     show Fold   = "fold"
+
+instance Show TFoldOp where
+    show TFold  = "tfold"
 
 instance Show Variable where
     show X      = "x"
@@ -86,13 +86,13 @@ parse_ternary :: String -> Maybe TernOp
 parse_ternary "if0"   = Just IfZero
 parse_ternary _       = Nothing
 
-parse_tfolds :: String -> Maybe TFoldOp
-parse_tfolds  "tfold" = Just TFold
-parse_tfolds  _       = Nothing
-
 parse_folds :: String -> Maybe FoldOp
 parse_folds   "fold"  = Just Fold
 parse_folds   _       = Nothing
+
+parse_tfolds :: String -> Maybe TFoldOp
+parse_tfolds  "tfold" = Just TFold
+parse_tfolds  _       = Nothing
 
 parse_opstrings :: [String] -> Operators
 parse_opstrings opstrings = Operators {
