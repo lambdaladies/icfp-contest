@@ -73,6 +73,7 @@ solve_next_problem (p:ps) = do
 try_next_candidate :: Problem -> [Expr] -> PureMT -> IO Bool
 try_next_candidate p candidates random0 = do
     delay_before_guess <- set_timer $ msDelay 5500
+    putStrLn $ "\nCandidates before eval:" ++ show (length candidates)
     -- submit a query
     (input, random1) <- return $ randomVector random0
     eval_response <- submit_eval_request p [input]
@@ -82,7 +83,6 @@ try_next_candidate p candidates random0 = do
 
           -- filter candidates based on eval
           remaining <- return $ filter (\c -> eval_program c input == output) candidates
-          putStrLn ("\n" ++ show (length remaining) ++ "\n")
           -- make a guess
           if remaining == []
           then do
@@ -93,6 +93,8 @@ try_next_candidate p candidates random0 = do
               wait_for delay_before_guess
 
               delay_before_next <- set_timer $ msDelay 5500
+
+              putStrLn $ "\nCandidates before guess:" ++ show (length remaining)
               guess <- return $ head remaining
               guess_response <- submit_guess p guess
               case guessRespStatus guess_response of
