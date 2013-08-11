@@ -33,22 +33,17 @@ guessURL    = callServer "guess"
 
 decode_string s = decode $ BS.pack s
 
---todo: add bodies
---postRequestWithBody url "json" "test"
 getJSON :: String -> IO BS.ByteString
 getJSON url = do
     json <- simpleHTTP (getRequest url) >>= getResponseBody
     return (BS.pack json)
 
-debug_request jsonBody url = do
-    print $ "POST " ++ url
-    print $ encode jsonBody
-    return ()
-
 -- makes a post request for a given json-request and yields (hopefully)
-postData :: (ToJSON a, FromJSON b) => a -> (String -> b) -> String -> IO b
+postData :: (ToJSON a, FromJSON b, Show b) => a -> (String -> b) -> String -> IO b
 postData jsonBody failRequest url = do
-  debug_request jsonBody url
+  print $ "POST " ++ url
+  print $ encode jsonBody
+
   initRequest <- parseUrl url
   let request =
         initRequest { method = methodPost
@@ -56,12 +51,17 @@ postData jsonBody failRequest url = do
                     , requestBody = RequestBodyLBS (encode jsonBody)
                     }
   res <- withManager $ httpLbs request
+  result <- return $ getPostResult res failRequest
+  print $ show result
+  return result
+
+getPostResult res failRequest = do
   let status = responseStatus res
-  return $ case statusCode status of
+  case statusCode status of
        200 ->  do
                let eitherJson = eitherDecode (responseBody res)
                case eitherJson of
-                 Left e -> failRequest ("Could not decode: "
+                 Left e -> failRequest ("Could not decode:\n"
                                         ++ show (responseBody res)
                                         ++ "\n" ++ show e)
                  Right bVal -> bVal
