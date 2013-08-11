@@ -40,9 +40,16 @@ getJSON url = do
     json <- simpleHTTP (getRequest url) >>= getResponseBody
     return (BS.pack json)
 
+debug_request jsonBody url = do
+    print $ "POST " ++ url
+    print $ encode jsonBody
+    _ <- getLine
+    return ()
+
 -- makes a post request for a given json-request and yields (hopefully)
 postData :: (ToJSON a, FromJSON b) => a -> (String -> b) -> String -> IO b
 postData jsonBody failRequest url = do
+  debug_request jsonBody url
   initRequest <- parseUrl url
   let request =
         initRequest { method = methodPost
