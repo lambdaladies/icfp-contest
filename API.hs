@@ -71,9 +71,9 @@ postData jsonBody failRequest url = do
 
 -- prints the response of a given training request
 
-testTrain :: TrainingRequest -> IO ()
+testTrain :: TrainingRequest -> IO Problem
 testTrain jsonBody =
-  (postData jsonBody dummy_problem trainURL :: IO Problem) >>= print
+  postData jsonBody dummy_problem trainURL :: IO Problem
 
 dummy_problem msg = Problem { problemId = "Error: " ++ msg,
                               problemSize = 0,

@@ -36,6 +36,11 @@ main = do
 
     solve_next_problem to_solve
 
+train = do
+    to_solve <- testTrain (TrainingRequest (Just 10) []) 
+    print $ problemSize to_solve
+    solve_next_problem [to_solve]
+
 solve_next_problem [] = do
     print "Done!"
 
