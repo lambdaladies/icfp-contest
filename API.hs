@@ -90,7 +90,7 @@ data TrainingRequest =
 
 instance ToJSON TrainingRequest where
   toJSON tReq = case reqSize tReq of
-    Nothing -> object ["operators" .= (toJSON (reqOperators tReq))]
+    Nothing    -> object ["operators" .= toJSON (reqOperators tReq)]
     Just rSize -> object [ "size" .= rSize ]
 
 instance ToJSON Ops where
