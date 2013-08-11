@@ -132,12 +132,9 @@ opset (         Unary op1 e0) = (singleton $ UnaryOp op1) `union` (opset  e0)
 opset (     Binary op2 e0 e1) = (singleton $ BinaryOp op2) `union` (opset  e0) `union` (opset  e1)
 opset ( Ternary op3 e0 e1 e2) = (singleton $ TernaryOp op3) `union` (opset  e0) `union` (opset  e1) `union` (opset  e2)
 
--- Whole programs
-interp :: Expr -> Vector -> Vector
+
 -- Intermediate expressions, evaluated in a 3-var environment
 eval :: Expr -> (Maybe Vector, Maybe Vector, Maybe Vector) -> Vector
-
-interp e i = eval e (Just i, Nothing, Nothing)
 
 eval (                 Zero) env = 0x0000000000000000
 eval (                  One) env = 0x0000000000000001
