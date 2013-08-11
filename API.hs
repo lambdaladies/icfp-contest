@@ -40,8 +40,8 @@ getJSON url = do
     return (BS.pack json)
 
 -- makes a post request for a given json-request and yields (hopefully)
-postData :: (ToJSON a, FromJSON b, Show b) => a -> (String -> b) -> String -> IO b
-postData jsonBody failRequest url = do
+postData :: (ToJSON a, FromJSON b, Show b) => a -> (String -> b) -> Int -> String -> IO b
+postData jsonBody failRequest responseTimeout url = do
   putStrLn $ "POST " ++ url
   print $ encode jsonBody
 
@@ -51,31 +51,47 @@ postData jsonBody failRequest url = do
                     , requestHeaders = [("Content-Type", "application/json")]
                     , requestBody = RequestBodyLBS (encode jsonBody)
                     }
-  response <- try (withManager $ httpLbs request)
-  result <- return $ case response of
-                       Left e -> failRequest $ show (e :: SomeException)
-                       Right res -> getPostResult res failRequest
+  response <- try (withManagerSettings
+                    (def { managerResponseTimeout = Just responseTimeout })
+                    (httpLbs request))
+  result <-
+    case response of
+      Left ResponseTimeout ->
+      -- retry with higher responseTimeout value
+        postData jsonBody failRequest (responseTimeout + 1000000) url
+      Left (StatusCodeException s _ _) ->
+        case statusCode s of
+          410  -> return $ failRequest "Timeout"
+          -- got "try again later", just retry request
+          429  -> putStr ("\nretry request\n") >>
+                    postData jsonBody failRequest responseTimeout url
+          _    -> return $ failRequest (B.unpack $ statusMessage s)
+      Left e ->  return (failRequest $ show (e :: HttpException))
+      Right res -> getPostResult res failRequest
   print result
   return result
-
-getPostResult res failRequest = do
-  let status = responseStatus res
-  case statusCode status of
+ where
+  getPostResult res failRequest = do
+    let status = responseStatus res
+    case statusCode status of
        200 ->  do
                let eitherJson = eitherDecode (responseBody res)
                case eitherJson of
-                 Left e -> failRequest ("Could not decode:\n"
+                 Left e -> return $ failRequest ("Could not decode:\n"
                                         ++ show (responseBody res)
                                         ++ "\n" ++ show e)
-                 Right bVal -> bVal
-       410  -> failRequest "Timeout"
-       _    -> failRequest (B.unpack $ statusMessage status)
+                 Right bVal -> return bVal
+       410  -> return $ failRequest "Timeout"
+       -- got "try again later", just retry request
+       429  -> putStr ("\nretry request\n") >>
+                 postData jsonBody failRequest responseTimeout url
+       _    -> return $ failRequest (B.unpack $ statusMessage status)
 
 -- prints the response of a given training request
 
 testTrain :: TrainingRequest -> IO Problem
 testTrain jsonBody =
-  postData jsonBody dummy_problem trainURL :: IO Problem
+  postData jsonBody dummy_problem 1000000 trainURL :: IO Problem
 
 dummy_problem msg = Problem { problemId = "Error: " ++ msg,
                               problemSize = 0,
@@ -84,9 +100,12 @@ dummy_problem msg = Problem { problemId = "Error: " ++ msg,
                               problemSolved = False,
                               problemTimeLeft = Nothing }
 
+default_res_timeout = 1000000
+
 testPost :: ToJSON a => String -> a -> IO ()
 testPost url jsonBody =
-  (postData jsonBody dummy_problem url :: IO Problem) >>= print
+  (postData jsonBody dummy_problem default_res_timeout url :: IO Problem)
+    >>= print
 
 -- Get JSON data and decode it
 call :: FromJSON b => String -> IO b

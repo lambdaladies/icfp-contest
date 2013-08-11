@@ -111,9 +111,12 @@ try_next_candidate p candidates random0 = do
                     wait_for delay_before_next
                     try_next_candidate p after_ctrexample random1
                 _ -> do
-                    confirm $ show_error (guessRespMessage guess_response)
-      _ -> do
-          confirm $ show_error (evalRespMessage eval_response)
+                -- just try again with the remaining expressions
+                  putStrLn "Waiting..."
+                  wait_for delay_before_next
+                  try_next_candidate p (tail remaining) random1
+      _ -> -- just continue and do not retry
+           return True
 
 confirm :: String -> IO Bool
 confirm msg = do
@@ -138,14 +141,21 @@ show_error (Just s) = "Error: " ++ show s
 show_error Nothing  = "Error: missing error message"
 
 submit_eval_request :: Problem -> [Vector] -> IO EvalResponse
-submit_eval_request p inputs = postData EvalRequest { evalReqId = problemId p, evalReqArguments = inputs } fail_eval_request evalURL
+submit_eval_request p inputs =
+  postData EvalRequest { evalReqId = problemId p, evalReqArguments = inputs }
+           fail_eval_request
+           default_res_timeout
+           evalURL
 
 fail_eval_request :: String -> EvalResponse
 fail_eval_request msg = EvalResponse { evalRespStatus = "error", evalRespOutputs = Nothing,
                                        evalRespMessage = Just msg }
 
 submit_guess :: Problem -> Expr -> IO GuessResponse
-submit_guess p guess = postData Guess { guessId = problemId p, guessProgram = guess } fail_guess guessURL
+submit_guess p guess = postData Guess { guessId = problemId p, guessProgram = guess }
+                                fail_guess
+                                default_res_timeout
+                                guessURL
 
 fail_guess :: String -> GuessResponse
 fail_guess msg = GuessResponse { guessRespStatus = "error", guessRespValues = Nothing, guessRespLightning = Nothing,
