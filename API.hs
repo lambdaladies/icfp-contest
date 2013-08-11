@@ -95,7 +95,7 @@ testTrain jsonBody =
 
 dummy_problem msg = Problem { problemId = "Error: " ++ msg,
                               problemSize = 0,
-                              problemOperators = Operators { unary=[], binary=[], ternary=[], folds=[] },
+                              problemOperators = Operators { unary=[], binary=[], ternary=[], folds=[], tfolds=[], vars=[] },
                               problemChallenge = Nothing,
                               problemSolved = False,
                               problemTimeLeft = Nothing }

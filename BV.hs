@@ -9,15 +9,16 @@ import Data.Word (Word64)
 
 type Vector = Word64
 
-data UnOp = Not | Shl1 | Shr1 | Shr4 | Shr16 deriving (Eq, Ord)
-data BinOp = And | Or | Xor | Plus deriving (Eq, Ord)
-data TernOp = IfZero deriving (Eq, Ord)
-data FoldOp = Fold | TFold deriving (Eq, Ord)
+data UnOp    = Not | Shl1 | Shr1 | Shr4 | Shr16 deriving (Eq, Ord)
+data BinOp   = And | Or | Xor | Plus deriving (Eq, Ord)
+data TernOp  = IfZero deriving (Eq, Ord)
+data FoldOp  = Fold deriving (Eq, Ord)
+data TFoldOp = TFold deriving (Eq, Ord)
 
 data Ops = UnaryOp UnOp | BinaryOp BinOp | TernaryOp TernOp | TFoldOp | FoldOp
   deriving (Show, Eq, Ord)
 
-data Variable = X | Y | Z deriving (Show, Eq, Ord)
+data Variable = X | Y | Z deriving (Eq, Ord)
 
 type ExprSize = Int
 
@@ -34,7 +35,9 @@ data Operators = Operators {
     unary   :: [UnOp],
     binary  :: [BinOp],
     ternary :: [TernOp],
-    folds   :: [FoldOp]
+    folds   :: [FoldOp],
+    tfolds  :: [TFoldOp],
+    vars    :: [Variable]
 } deriving (Show, Eq, Ord)
 
 instance Show UnOp where
@@ -53,9 +56,16 @@ instance Show BinOp where
 instance Show TernOp where
     show IfZero = "if0"
 
+instance Show TFoldOp where
+    show TFold  = "fold"
+
 instance Show FoldOp where
     show Fold   = "fold"
-    show TFold  = "tfold"
+
+instance Show Variable where
+    show X      = "x"
+    show Y      = "y"
+    show Z      = "z"
 
 parse_unary :: String -> Maybe UnOp
 parse_unary   "not"   = Just Not
@@ -76,25 +86,28 @@ parse_ternary :: String -> Maybe TernOp
 parse_ternary "if0"   = Just IfZero
 parse_ternary _       = Nothing
 
+parse_tfolds :: String -> Maybe TFoldOp
+parse_tfolds  "tfold" = Just TFold
+parse_tfolds  _       = Nothing
+
 parse_folds :: String -> Maybe FoldOp
 parse_folds   "fold"  = Just Fold
-parse_folds   "tfold" = Just TFold
 parse_folds   _       = Nothing
 
 parse_opstrings :: [String] -> Operators
 parse_opstrings opstrings = Operators {
-    unary   = catMaybes $ map parse_unary opstrings,
-    binary  = catMaybes $ map parse_binary opstrings,
+    unary   = catMaybes $ map parse_unary   opstrings,
+    binary  = catMaybes $ map parse_binary  opstrings,
     ternary = catMaybes $ map parse_ternary opstrings,
-    folds   = catMaybes $ map parse_folds opstrings
+    folds   = catMaybes $ map parse_folds   opstrings,
+    tfolds  = catMaybes $ map parse_tfolds  opstrings,
+    vars    = [X]
 }
 
 instance Show Expr where
     show (                 Zero) = "0"
     show (                  One) = "1"
-    show (                Var X) = "x"
-    show (                Var Y) = "y"
-    show (                Var Z) = "z"
+    show (                Var v) = show v
     show (FoldLambdaYZ e0 e1 e2) = "(fold " ++ show e0 ++ " " ++ show e1 ++ " (lambda (y z) " ++ show e2 ++ "))"
     show (         Unary op1 e0) = "(" ++ show op1 ++ " " ++ show e0 ++ ")"
     show (     Binary op2 e0 e1) = "(" ++ show op2 ++ " " ++ show e0 ++ " " ++ show e1 ++ ")"
@@ -157,8 +170,12 @@ eval_ternary IfZero e x y = if e == 0 then x else y
 unary_ops = [Not, Shl1, Shr1, Shr4, Shr16]
 binary_ops = [And, Or, Xor, Plus]
 ternary_ops = [IfZero]
-fold_ops = [Fold, TFold]
-supported_ops = Operators { unary=unary_ops, binary=binary_ops, ternary=ternary_ops, folds=[] }
+fold_ops = [Fold]
+tfold_ops = [TFold]
+all_without_tfold = Operators { unary=unary_ops, binary=binary_ops, ternary=ternary_ops,
+                                folds=fold_ops, tfolds=[], vars=[X] }
+all_with_tfold    = Operators { unary=unary_ops, binary=binary_ops, ternary=ternary_ops,
+                                folds=fold_ops, tfolds=tfold_ops, vars=[X] }
 
 triples :: ExprSize -> [(ExprSize, ExprSize, ExprSize)]
 triples x = [(i, j, k) | i <- [1..(x-2)], (j, k) <- pairs (x-i)]
@@ -174,29 +191,32 @@ pairs_in_order x = [(i, x-i) | i <- [1..(x `div` 2)]]
 trivial = fromList [Unary Shr1 One, Unary Shr4 One, Unary Shr16 One]
 nontrivial e = not $ member e trivial
 
-
+-- does not take into account tfold
 generate_open recgen ops n
-    | n == 1    = [Zero, One, Var X]
+    | n == 0    = []
+    | n == 1    = [Zero, One] ++ [Var v | v <- vars ops]
     | n == 2    = filter nontrivial [Unary op1 e0 | op1 <- unary ops,
                                                     e0 <- recgen ops (n-1)]
-    | otherwise = [Unary op1 e0         | op1 <- unary ops,
-                                          e0 <- recgen ops (n-1)] ++
-                  [Binary op2 e0 e1     | op2 <- binary ops,
-                                          (i, j) <- pairs_in_order (n-1),
-                                          e0 <- recgen ops i,
-                                          e1 <- recgen ops j] ++
-                  [Ternary op3 e0 e1 e2 | op3 <- ternary ops,
-                                          (i, j, k) <- triples (n-1),
-                                          e0 <- recgen ops i,
-                                          e1 <- recgen ops j,
-                                          e2 <- recgen ops k] ++
-                  [FoldLambdaYZ e0 e1 e2 | (i, j, k) <- triples (n-1),
-                                          e0 <- recgen ops i,
-                                          e1 <- recgen ops j,
-                                          e2 <- recgen ops k]
+    | otherwise = [Unary op1 e0          | op1 <- unary ops,
+                                           e0 <- recgen ops (n-1)] ++
+                  [Binary op2 e0 e1      | op2 <- binary ops,
+                                           (i, j) <- pairs_in_order (n-1),
+                                           e0 <- recgen ops i,
+                                           e1 <- recgen ops j] ++
+                  [Ternary op3 e0 e1 e2  | op3 <- ternary ops,
+                                           (i, j, k) <- triples (n-1),
+                                           e0 <- recgen ops i,
+                                           e1 <- recgen ops j,
+                                           e2 <- recgen ops k] ++
+                  [FoldLambdaYZ e0 e1 e2 | opf <- folds ops,
+                                           (i, j, k) <- triples (n-2),
+                                           e0 <- recgen ops i,
+                                           e1 <- recgen ops j,
+                                           e2 <- recgen ops k]
 
 integerLength xs = toInteger $ length xs
 
+-- does not take into account tfold
 l_generate_open l_recgen ops n
     | n <= 2    = integerLength $ generate ops n
     | otherwise = integerLength (unary ops)   * l_recgen ops (n-1) +
@@ -204,31 +224,41 @@ l_generate_open l_recgen ops n
                                                     | (i, j) <- pairs_in_order (n-1)] +
                   integerLength (ternary ops) * sum [l_recgen ops i * l_recgen ops j * l_recgen ops k
                                                     | (i, j, k) <- triples (n-1)] +
-                  integerLength (folds ops) * sum [l_recgen ops i * l_recgen ops j * l_recgen ops k
-                                                    | (i, j, k) <- triples (n-1)]
+                  integerLength (folds ops)   * sum [l_recgen ops i * l_recgen ops j * l_recgen ops k
+                                                    | (i, j, k) <- triples (n-2)]
 
 show_program e0 = "(lambda (x) " ++ show e0 ++ ")"
 size_program e0 = 1 + size e0
 eval_program e0 i = eval e0 (Just i, Nothing, Nothing)
 
+inner_ops ops = Operators { unary=unary ops, binary=binary ops, ternary=ternary ops,
+                            folds=folds ops, tfolds=[], vars=[X,Y,Z] }
+
 generate :: Operators -> Int -> [Expr]
-generate ops n = memoize2 generate_open ops n
---generate = fix generate_open
+generate ops n
+    | tfolds ops /= [] = [FoldLambdaYZ (Var X) Zero e | e <- generate (inner_ops ops) (n-4)]
+    | otherwise        = memoize2 generate_open ops n
 
 generate_all :: Operators -> Int -> [Expr]
-generate_all ops n = memoize2_and_reduce concat generate_open ops n
+generate_all ops n
+    | tfolds ops /= [] = [FoldLambdaYZ (Var X) Zero e | e <- generate_all (inner_ops ops) (n-4)]
+    | otherwise        = memoize2_and_reduce concat generate_open ops n
 
 l_generate :: Operators -> Int -> Integer
-l_generate ops n = memoize2 l_generate_open ops n
+l_generate ops n
+    | tfolds ops /= [] = l_generate (inner_ops ops) (n-4)
+    | otherwise        = memoize2 l_generate_open ops n
 
 l_generate_all :: Operators -> Int -> Integer
-l_generate_all ops n = memoize2_and_reduce sum l_generate_open ops n
+l_generate_all ops n
+    | tfolds ops /= [] = l_generate_all (inner_ops ops) (n-4)
+    | otherwise        = memoize2_and_reduce sum l_generate_open ops n
 
-memoize2 f ops n = just_lookup (ops, n) final_memo
-    where final_memo = loop f Map.empty ops 1 n
+memoize2 f ops n = just_lookup (ops, n `max` 0) final_memo
+    where final_memo = loop f Map.empty ops 0 n
 
-memoize2_and_reduce r f ops n = r [just_lookup (ops, i) final_memo | i <- [1..n]]
-    where final_memo = loop f Map.empty ops 1 n
+memoize2_and_reduce r f ops n = r [just_lookup (ops, i `max` 0) final_memo | i <- [0..n]]
+    where final_memo = loop f Map.empty ops 0 n
 
 -- We know that memo lookups will succeed, because programs of given sizes are calculated
 -- in order from size 1..n.
@@ -238,4 +268,4 @@ loop f memo ops i n
     | i < n     = loop f memo' ops (i+1) n
     | otherwise = memo'
     where memo' = Map.insert (ops, i) (f recf ops i) memo
-          recf ops' i' = just_lookup (ops', i') memo
+          recf ops' i' = just_lookup (ops', i' `max` 0) memo
