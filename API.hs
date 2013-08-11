@@ -115,31 +115,8 @@ instance ToJSON TrainingRequest where
 instance ToJSON Ops where
     toJSON ops = String (T.pack $ show ops)
 
--- interface Guess {
---     id: string;
---     program: string;
---    }
-
-data Guess =
-  Guess {
-          guessId   :: String,
-          guessProg :: Expr
-        }
-
-instance ToJSON Guess where
-  toJSON gReq = object [ "id"      .= guessId gReq
-                       , "program" .= guessProg gReq
-                       ]
-
 instance ToJSON Expr where
   toJSON expr = String (T.pack $ show_program expr)
-
--- interface GuessResponse {
---      status: string;
---      values?: string[];
---      message?: string;
---      lightning?: bool;
---    }
 
 --TODO: add body to request
 train = call trainURL :: IO Problem
@@ -176,6 +153,28 @@ instance FromJSON EvalResponse where
 
 
 -- Guesses and guess responses
+
+-- interface Guess {
+--     id: string;
+--     program: string;
+-- }
+
+data Guess = Guess {
+    guessId      :: String,
+    guessProgram :: Expr
+}
+
+instance ToJSON Guess where
+  toJSON gReq = object [ "id"      .= guessId gReq
+                       , "program" .= guessProgram gReq
+                       ]
+
+-- interface GuessResponse {
+--     status: string;
+--     values?: string[];
+--     message?: string;
+--     lightning?: bool;
+-- }
 
 data GuessResponse = GuessResponse {
     status    :: String,
