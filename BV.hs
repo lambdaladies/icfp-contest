@@ -9,13 +9,13 @@ import Data.Word (Word64)
 
 type Vector = Word64
 
-data UnOp = Not | Shl1 | Shr1 | Shr4 | Shr16 deriving (Eq, Ord, Show)
-data BinOp = And | Or | Xor | Plus deriving (Eq, Ord, Show)
-data TernOp = IfZero deriving (Eq, Ord, Show)
-data FoldOp = Fold | TFold deriving (Eq, Ord, Show)
+data UnOp = Not | Shl1 | Shr1 | Shr4 | Shr16 deriving (Eq, Ord)
+data BinOp = And | Or | Xor | Plus deriving (Eq, Ord)
+data TernOp = IfZero deriving (Eq, Ord)
+data FoldOp = Fold | TFold deriving (Eq, Ord)
 
 data Ops = UnaryOp UnOp | BinaryOp BinOp | TernaryOp TernOp | TFoldOp | FoldOp
-  deriving (Eq, Ord, Show)
+  deriving (Show, Eq, Ord)
 
 data Variable = X | Y | Z deriving (Show, Eq, Ord)
 
@@ -36,6 +36,26 @@ data Operators = Operators {
     ternary :: [TernOp],
     folds   :: [FoldOp]
 } deriving (Show, Eq, Ord)
+
+instance Show UnOp where
+    show Not   = "not"
+    show Shl1  = "shl1"
+    show Shr1  = "shr1"
+    show Shr4  = "shr4"
+    show Shr16 = "shr16"
+
+instance Show BinOp where
+    show And   = "and"
+    show Or    = "or"
+    show Xor   = "xor"
+    show Plus  = "plus"
+
+instance Show TernOp where
+    show IfZero = "if0"
+
+instance Show FoldOp where
+    show Fold   = "fold"
+    show TFold  = "tfold"
 
 parse_unary :: String -> Maybe UnOp
 parse_unary   "not"   = Just Not
