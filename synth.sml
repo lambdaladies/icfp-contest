@@ -1,6 +1,6 @@
 (* First cut attempt at implementing the synthesis algorithm in this paper:
 * https://research.microsoft.com/en-us/um/people/sumitg/pubs/icse10_synthesis.pdf
-*
+* This was never used.
 *)
 
 structure Synth =
