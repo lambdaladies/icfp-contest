@@ -148,6 +148,10 @@ eval (FoldLambdaYZ e0 e1 e2) env@(Just x, Nothing, Nothing) = foldr f (eval e1 e
     where f y z = eval e2 (Just x, Just y, Just z)
 eval expr env = trace ("expr:" ++ show expr ++ " env:" ++ show env) (fromJust Nothing)
 
+
+-- Some of these word operations are buggy on a 32-bit platform
+-- (we were running on 64-bit and only found that near the end).
+
 -- convert a 64-bit word to a list of 8 bytes-as-words in bigendian order
 bytes i = [(shiftR i offset) .&. 0x00000000000000FF | offset <- [56,48..0]]
 
