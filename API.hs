@@ -21,8 +21,7 @@ import Network.HTTP.Types (methodPost)
 import Network.HTTP.Types.Status (statusCode, statusMessage)
 import Network.HTTP.Conduit
 
---hey remove this before making code public!!!!
-key = "0373FX9sGnppdRBUxTroWBx8Rb4EJ53kFAYeMNgpvpsH1H"
+key = "THIS_WAS_OUR_TOKEN_vpsH1H"
 
 callServer path = "http://icfpc2013.cloudapp.net/" ++ (dropWhile ('/'==) path) ++ "?auth=" ++ key
 
