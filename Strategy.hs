@@ -118,16 +118,6 @@ try_next_candidate p candidates random0 = do
       _ -> -- just continue and do not retry
            return True
 
-confirm :: String -> IO Bool
-confirm msg = do
-    putStrLn msg
-    putStrLn "Continue after error ('n' to stop)?"
-    answer <- getLine
-    let res = case answer of
-                ('n':_) -> False
-                _       -> True
-    return res
-
 set_timer :: Delay -> IO (MVar ())
 set_timer d = do
     m <- newEmptyMVar
