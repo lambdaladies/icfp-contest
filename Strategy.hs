@@ -19,7 +19,9 @@ cost_threshold = 100000000000
 
 want_to_solve p =
     not (problemSolved p) &&
-    folds (problemOperators p) /= [] &&
+    -- We actually ran two instances at the end, one doing problems with 'fold' and the other without.
+    --folds (problemOperators p) == [] &&
+    --folds (problemOperators p) /= [] &&
     cost p < cost_threshold &&
     has_time_left (problemTimeLeft p)
 
